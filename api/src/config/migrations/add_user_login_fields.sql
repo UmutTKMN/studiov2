@@ -1,0 +1,5 @@
+ALTER TABLE users
+ADD COLUMN last_login DATETIME DEFAULT NULL,
+ADD COLUMN login_count INT DEFAULT 0,
+ADD COLUMN failed_login_attempts INT DEFAULT 0,
+ADD COLUMN last_failed_login DATETIME DEFAULT NULL;

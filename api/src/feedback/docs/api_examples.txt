@@ -1,0 +1,30 @@
+
+1. FEEDBACK OLUŞTURMA
+URL: POST http://localhost:3000/api/feedback
+Body:
+{
+    "type": "BUG",
+    "title": "Menü açılmıyor",
+    "description": "Mobil menü tıklandığında açılmıyor",
+    "email": "test@example.com"
+}
+
+2. TÜM FEEDBACKLER (Admin)
+URL: GET http://localhost:3000/api/feedback
+Headers: 
+- Authorization: Bearer admin_token
+
+3. FEEDBACK GÜNCELLEME (Admin)
+URL: PUT http://localhost:3000/api/feedback/1
+Headers:
+- Authorization: Bearer admin_token
+Body:
+{
+    "status": "IN_PROGRESS",
+    "priority": "HIGH"
+}
+
+4. FEEDBACK SİLME (Admin)
+URL: DELETE http://localhost:3000/api/feedback/1
+Headers:
+- Authorization: Bearer admin_token
