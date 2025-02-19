@@ -1,14 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const PostController = require("../controllers/Post.Controller");
-const { authenticate, checkRole } = require("../middleware/auth");
+const { authenticate } = require("../middleware/auth");
 const validate = require("../middleware/validate");
 const postSchemas = require("../validators/post.validator");
 const upload = require("../middleware/upload");
 
 // Public rotalar
 router.get("/", validate(postSchemas.filter), PostController.getAllPosts);
-router.get("/:id", PostController.getPost);
+router.get("/:slug", PostController.getPostBySlug);
 router.get(
   "/user/:userId",
   validate(postSchemas.filter),

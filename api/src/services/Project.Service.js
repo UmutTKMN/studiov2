@@ -17,25 +17,25 @@ class ProjectService {
         throw new Error("Proje açıklaması gerekli");
       }
 
-      console.log('Creating project with data:', projectData); // Debug için
+      console.log("Creating project with data:", projectData); // Debug için
 
       const result = await Project.create(projectData);
-      
+
       // Yeni oluşturulan projeyi getir
       const newProject = await Project.findById(result.insertId);
-      
+
       // Aktivite logu ekle
       await ActivityLogService.logActivity(
         projectData.project_owner,
-        'CREATE',
-        'projects',
+        "CREATE",
+        "projects",
         result.insertId,
         `Yeni proje oluşturuldu: ${projectData.project_title}`
       );
 
       return newProject;
     } catch (error) {
-      console.error('Project service error:', error); // Debug için
+      console.error("Project service error:", error); // Debug için
       throw new Error("Proje yazısı oluşturma hatası: " + error.message);
     }
   }
@@ -43,9 +43,32 @@ class ProjectService {
   static async getAllProjects(filters = {}) {
     try {
       const projects = await Project.findAll(filters);
-      return projects;
+
+      if (!projects || projects.length === 0) {
+        return [];
+      }
+
+      // Proje verilerini düzenle
+      const formattedProjects = projects.map((project) => {
+        return {
+          id: project.project_id,
+          title: project.project_title,
+          slug: project.project_slug,
+          description: project.project_description,
+          owner: project.project_owner,
+          tags: project.project_tags,
+          status: project.project_status,
+          startDate: project.project_start_date,
+          endDate: project.project_end_date,
+          budget: project.project_budget,
+          image: project.project_image,
+        };
+      });
+
+      return formattedProjects;
     } catch (error) {
-      throw new Error("Projeleri alma hatası: " + error.message);
+      console.error("Get all projects error:", error); // Debug için
+      throw new Error("Proje alma hatası: " + error.message);
     }
   }
 
@@ -71,14 +94,16 @@ class ProjectService {
         throw new Error("Bu işlem için yetkiniz yok");
       }
       await Project.update(projectId, projectData);
-      
+
       // Aktivite logu ekle
       await ActivityLogService.logActivity(
         userId,
-        'UPDATE',
-        'projects',
+        "UPDATE",
+        "projects",
         projectId,
-        `Proje güncellendi: ${projectData.project_title || project.project_title}`
+        `Proje güncellendi: ${
+          projectData.project_title || project.project_title
+        }`
       );
 
       return {
@@ -92,7 +117,7 @@ class ProjectService {
 
   static async deleteProject(projectId, userId) {
     try {
-      console.log('Deleting project:', { projectId, userId }); // Debug için
+      console.log("Deleting project:", { projectId, userId }); // Debug için
 
       const project = await Project.findById(projectId);
       if (!project) {
@@ -105,36 +130,32 @@ class ProjectService {
       }
 
       await Project.delete(projectId);
-      
+
       // Aktivite logu ekle
       await ActivityLogService.logActivity(
         userId,
-        'DELETE',
-        'projects',
+        "DELETE",
+        "projects",
         projectId,
         `Proje silindi: ${project.project_title}`
       );
 
       return true;
     } catch (error) {
-      console.error('Delete project error:', error); // Debug için
+      console.error("Delete project error:", error); // Debug için
       throw new Error("Proje silme hatası: " + error.message);
     }
   }
 
-  static async getUserProjects(userId) {
+  static async getProjectBySlug(slug) {
     try {
-      return await Project.findByUserId(userId);
+      const project = await Project.findBySlug(slug);
+      if (!project) {
+        throw new Error("Proje bulunamadı");
+      }
+      return project;
     } catch (error) {
-      throw new Error("Kullanıcı projelerini alma hatası: " + error.message);
-    }
-  }
-
-  static async searchProjects(searchTerm) {
-    try {
-      return await Project.search(searchTerm);
-    } catch (error) {
-      throw new Error("Proje arama hatası: " + error.message);
+      throw new Error("Proje alma hatası: " + error.message);
     }
   }
 }

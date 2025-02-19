@@ -101,9 +101,6 @@ class Project {
 
       query += " ORDER BY p.project_createdAt DESC";
 
-      console.log('Query:', query); // Debug için
-      console.log('Params:', queryParams); // Debug için
-
       pool.query(query, queryParams, (error, results) => {
         if (error) return reject(error);
         resolve(results);
@@ -176,6 +173,23 @@ class Project {
       pool.query(query, [userId], (error, results) => {
         if (error) reject(error);
         resolve(results);
+      });
+    });
+  }
+
+  static async findBySlug(slug) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        SELECT p.*, 
+               u.user_name as owner_name, 
+               u.user_profileImage as owner_image
+        FROM projects p 
+        LEFT JOIN users u ON p.project_owner = u.user_id 
+        WHERE p.project_slug = ?
+      `;
+      pool.query(query, [slug], (error, results) => {
+        if (error) reject(error);
+        resolve(results[0]);
       });
     });
   }

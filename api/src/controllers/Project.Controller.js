@@ -6,32 +6,32 @@ class ProjectController {
   static async createProject(req, res, next) {
     try {
       // Debug için
-      console.log('User in request:', req.user);
-      console.log('Request body:', req.body);
+      console.log("User in request:", req.user);
+      console.log("Request body:", req.body);
 
       const projectData = {
         project_title: req.body.project_title,
         project_description: req.body.project_description,
         project_owner: req.user.id, // user.id'yi project_owner olarak kullan
         project_tags: req.body.project_tags,
-        project_status: req.body.project_status || 'pending',
+        project_status: req.body.project_status || "pending",
         project_start_date: req.body.project_start_date,
         project_end_date: req.body.project_end_date,
         project_budget: req.body.project_budget,
-        project_image: req.body.project_image
+        project_image: req.body.project_image,
       };
 
-      console.log('Project data to create:', projectData); // Debug için
+      console.log("Project data to create:", projectData); // Debug için
 
       const newProject = await ProjectService.createProject(projectData);
-      
+
       res.status(201).json({
         success: true,
         message: "Proje başarıyla oluşturuldu",
         project: newProject,
       });
     } catch (error) {
-      console.error('Project creation error:', error); // Debug için
+      console.error("Project creation error:", error); // Debug için
       next(new ErrorHandler(error.message, 400));
     }
   }
@@ -39,7 +39,10 @@ class ProjectController {
   static async getProject(req, res, next) {
     try {
       const project = await ProjectService.getProjectById(req.params.id);
-      res.json({ success: true, project });
+      res.status(200).json({
+        success: true,
+        project,
+      });
     } catch (error) {
       next(error);
     }
@@ -47,10 +50,18 @@ class ProjectController {
 
   static async getAllProjects(req, res, next) {
     try {
+      const filters = {
+        ...req.query,
+        limit: req.query.limit ? parseInt(req.query.limit) : undefined,
+      };
+
       const projects = await ProjectService.getAllProjects(req.query);
-      res.json({ success: true, projects });
+      res.status(200).json({
+        success: true,
+        projects: projects,
+      });
     } catch (error) {
-      next(error);
+      next(new ErrorHandler(error.message, 400));
     }
   }
 
@@ -84,31 +95,31 @@ class ProjectController {
 
   static async deleteProject(req, res, next) {
     try {
-      console.log('Delete request:', {
+      console.log("Delete request:", {
         projectId: req.params.id,
         userId: req.user.id,
-        userRole: req.user.role
+        userRole: req.user.role,
       }); // Debug için
 
       // Admin yetkisi kontrolü
-      if (req.user.role === 'admin') {
+      if (req.user.role === "admin") {
         // Admin için direkt ProjectService kullan
         await ProjectService.deleteProject(req.params.id, req.user.id);
         return res.status(200).json({
           success: true,
-          message: "Proje başarıyla silindi (Admin)"
+          message: "Proje başarıyla silindi (Admin)",
         });
       }
 
       // Normal kullanıcı için owner kontrolü
       await ProjectService.deleteProject(req.params.id, req.user.id);
-      
+
       res.status(200).json({
         success: true,
-        message: "Proje başarıyla silindi"
+        message: "Proje başarıyla silindi",
       });
     } catch (error) {
-      console.error('Delete controller error:', error);
+      console.error("Delete controller error:", error);
       next(new ErrorHandler(error.message, 400));
     }
   }
@@ -122,12 +133,37 @@ class ProjectController {
     }
   }
 
+  static async getProjectBySlug(req, res, next) {
+    try {
+      const { slug } = req.params;
+      const project = await ProjectService.getProjectBySlug(slug);
+
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          message: "Proje bulunamadı",
+        });
+      }
+      res.status(200).json({
+        success: true,
+        data: project,
+      });
+    } catch (error) {
+      next(new ErrorHandler(error.message, 500));
+    }
+  }
+
   static async searchProjects(req, res, next) {
     try {
-      const projects = await ProjectService.searchProjects(req.query.q);
-      res.json({ success: true, projects });
+      const { q } = req.query;
+      const projects = await ProjectService.searchProjects(q);
+
+      res.status(200).json({
+        success: true,
+        data: projects,
+      });
     } catch (error) {
-      next(error);
+      next(new ErrorHandler(error.message, 500));
     }
   }
 }

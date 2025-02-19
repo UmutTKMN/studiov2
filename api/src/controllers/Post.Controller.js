@@ -156,6 +156,26 @@ class PostController {
       next(new ErrorHandler(error.message, 400));
     }
   }
+
+  static async getPostBySlug(req, res, next) {
+    try {
+      const slug = req.params.slug;
+      const post = await PostService.getPostBySlug(slug);
+
+      if (!post) {
+        return res.status(404).json({
+          success: false,
+          message: "Blog yazısı bulunamadı",
+        });
+      }
+      res.status(200).json({
+        success: true,
+        post,
+      });
+    }catch (error) {
+      next(new ErrorHandler(error.message, 500));
+    }
+  }
 }
 
 module.exports = PostController;

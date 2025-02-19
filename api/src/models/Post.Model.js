@@ -140,16 +140,11 @@ class Post {
         queryParams.push(limit, offset);
       }
 
-      console.log('Final SQL Query:', query); // Debug için
-      console.log('Final Query Params:', queryParams); // Debug için
-
       pool.query(query, queryParams, (error, results) => {
         if (error) {
           console.error('Find all posts error:', error);
           return reject(error);
         }
-        console.log('Found posts count:', results?.length); // Debug için
-        console.log('First post sample:', results?.[0]); // İlk postu göster
         resolve(results || []);
       });
     });
@@ -239,6 +234,25 @@ class Post {
       pool.query(query, [id], (error, results) => {
         if (error) reject(error);
         resolve(results);
+      });
+    });
+  }
+
+  static async findBySlug(slug) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        SELECT p.*, 
+               u.user_name as author_name, 
+               u.user_profileImage as author_image,
+               c.category_name as category_name
+        FROM posts p 
+        LEFT JOIN users u ON p.post_author = u.user_id 
+        LEFT JOIN categories c ON p.post_category = c.category_id 
+        WHERE p.post_slug = ?`;
+
+      pool.query(query, [slug], (error, results) => {
+        if (error) reject(error);
+        resolve(results[0]);
       });
     });
   }

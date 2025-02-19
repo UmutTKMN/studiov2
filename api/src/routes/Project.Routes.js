@@ -7,7 +7,7 @@ const { authenticate, checkRole } = require("../middleware/auth");
 
 // Public routes
 router.get("/", ProjectController.getAllProjects); // Filtreleme opsiyonel olsun
-router.get("/:id", ProjectController.getProject);
+router.get("/:slug", ProjectController.getProjectBySlug);
 router.get("/user/:userId", ProjectController.getUserProjects);
 router.get("/search", ProjectController.searchProjects);
 
