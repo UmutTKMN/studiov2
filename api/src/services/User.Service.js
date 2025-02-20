@@ -27,8 +27,8 @@ class UserService {
       // Kayıt aktivitesini logla
       await ActivityLogService.logActivity(
         result.insertId, // Yeni oluşturulan kullanıcının ID'si
-        'REGISTER',
-        'users',
+        "REGISTER",
+        "users",
         result.insertId,
         `Yeni kullanıcı kaydı: ${userData.user_name} (${userData.user_email})`
       );
@@ -49,7 +49,7 @@ class UserService {
     try {
       const user = await User.findByEmail(email);
       let failedLoginLog = false;
-      
+
       if (!user) {
         throw new Error("Kullanıcı bulunamadı");
       }
@@ -63,19 +63,24 @@ class UserService {
       if (user.user_failed_login_attempts >= 5) {
         const lastFailedLogin = new Date(user.user_last_failed_login);
         const lockoutDuration = 30 * 60 * 1000; // 30 dakika
-        
-        if ((new Date() - lastFailedLogin) < lockoutDuration) {
-          throw new Error("Çok fazla başarısız deneme. Lütfen 30 dakika sonra tekrar deneyin");
+
+        if (new Date() - lastFailedLogin < lockoutDuration) {
+          throw new Error(
+            "Çok fazla başarısız deneme. Lütfen 30 dakika sonra tekrar deneyin"
+          );
         }
       }
 
-      const isValidPassword = await bcrypt.compare(password, user.user_password);
+      const isValidPassword = await bcrypt.compare(
+        password,
+        user.user_password
+      );
       if (!isValidPassword) {
         // Başarısız giriş logla
         await ActivityLogService.logActivity(
           user.user_id,
-          'LOGIN_FAILED',
-          'users',
+          "LOGIN_FAILED",
+          "users",
           user.user_id,
           `Başarısız giriş denemesi: ${email}`
         );
@@ -92,8 +97,8 @@ class UserService {
           email: user.user_email,
           role: {
             id: user.user_role,
-            name: user.role_name
-          }
+            name: user.role_name,
+          },
         },
         config.jwt.secret,
         { expiresIn: config.jwt.expiresIn }
@@ -103,8 +108,8 @@ class UserService {
       if (!failedLoginLog) {
         await ActivityLogService.logActivity(
           user.user_id,
-          'LOGIN',
-          'users',
+          "LOGIN",
+          "users",
           user.user_id,
           `Kullanıcı giriş yaptı: ${user.user_name}`
         );
@@ -120,12 +125,11 @@ class UserService {
         token,
         user: {
           ...userWithoutPassword,
-          last_login: new Date()
-        }
+          last_login: new Date(),
+        },
       };
-      
     } catch (error) {
-      console.error('Authentication error:', error);
+      console.error("Authentication error:", error);
       throw new Error("Kimlik doğrulama hatası: " + error.message);
     }
   }
@@ -160,10 +164,10 @@ class UserService {
       // Profil güncelleme logunu ekle
       await ActivityLogService.logActivity(
         userId,
-        'UPDATE',
-        'users',
+        "UPDATE",
+        "users",
         userId,
-        `Profil güncellendi: ${updateData.user_name || 'name-unchanged'}`
+        `Profil güncellendi: ${updateData.user_name || "name-unchanged"}`
       );
 
       // Güncellenmiş kullanıcıyı getir
@@ -193,7 +197,7 @@ class UserService {
       }
 
       const hashedPassword = await bcrypt.hash(newPassword, 10);
-      await User.update(userId, { user_password: hashedPassword });
+      await User.update(user.user_id, { user_password: hashedPassword });
     } catch (error) {
       throw new Error("Şifre değiştirme hatası: " + error.message);
     }
@@ -254,12 +258,13 @@ class UserService {
 
           const queries = {
             posts: "SELECT COUNT(*) as count FROM posts WHERE post_author = ?",
-            projects: "SELECT COUNT(*) as count FROM projects WHERE project_owner = ?"
+            projects:
+              "SELECT COUNT(*) as count FROM projects WHERE project_owner = ?",
           };
 
           let stats = {
             posts: 0,
-            projects: 0
+            projects: 0,
           };
 
           // İstatistikleri güvenli bir şekilde al
@@ -271,16 +276,20 @@ class UserService {
 
             stats.posts = postResults[0]?.count || 0;
 
-            connection.query(queries.projects, [userId], (error, projectResults) => {
-              connection.release();
+            connection.query(
+              queries.projects,
+              [userId],
+              (error, projectResults) => {
+                connection.release();
 
-              if (error) {
-                return reject(error);
+                if (error) {
+                  return reject(error);
+                }
+
+                stats.projects = projectResults[0]?.count || 0;
+                resolve(stats);
               }
-
-              stats.projects = projectResults[0]?.count || 0;
-              resolve(stats);
-            });
+            );
           });
         });
       });
@@ -421,44 +430,44 @@ class UserService {
         bio: user.user_bio,
         role: {
           id: user.user_role,
-          name: user.role_name
+          name: user.role_name,
         },
         profileImage: user.user_profileImage,
         education: {
           university: user.user_university,
           department: user.user_department,
           graduationYear: user.user_graduationYear,
-          degree: user.user_degree
+          degree: user.user_degree,
         },
         work: {
           company: user.user_company,
           position: user.user_position,
           yearsOfExperience: user.user_yearsOfExperience,
-          currentlyWorking: user.user_currentlyWorking
+          currentlyWorking: user.user_currentlyWorking,
         },
         social: {
           instagram: user.user_instagram,
           twitter: user.user_twitter,
           linkedin: user.user_linkedin,
-          github: user.user_github
+          github: user.user_github,
         },
         location: {
           country: user.user_country,
           city: user.user_city,
-          postalCode: user.user_postalCode
+          postalCode: user.user_postalCode,
         },
         preferences: {
           theme: user.user_theme,
           language: user.user_language,
           emailNotifications: user.user_emailNotifications,
-          pushNotifications: user.user_pushNotifications
+          pushNotifications: user.user_pushNotifications,
         },
         stats: {
           lastLogin: user.user_last_login,
           loginCount: user.user_login_count,
           createdAt: user.user_createdAt,
-          isVerified: user.user_isVerified
-        }
+          isVerified: user.user_isVerified,
+        },
       };
     } catch (error) {
       throw new Error("Profil bilgileri alınamadı: " + error.message);

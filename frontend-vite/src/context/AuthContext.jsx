@@ -39,20 +39,18 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       const response = await authService.login(credentials);
-      console.log('Login response:', response.data); // Debug için
-
-      if (response.data?.token) {
-        localStorage.setItem('token', response.data.token);
-        // User verisini düzgün şekilde set et
-        setUser(response.data.user || response.data.data);
+      const { token, user } = response.data;
+      
+      if (token && user) {
+        localStorage.setItem('token', token);
+        setUser(user);
         setError(null);
-        return response.data;
+        return { token, user };
       } else {
-        throw new Error('Token alınamadı');
+        throw new Error('Invalid response format');
       }
     } catch (err) {
-      console.error('Login error:', err); // Debug için
-      setError(err.response?.data?.message || 'Giriş başarısız');
+      setError(err.response?.data?.message || 'Login failed');
       throw err;
     }
   };
@@ -69,12 +67,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const isAdmin = () => {
+    return user?.role === 'admin';
+  };
+
   const value = {
     user,
     loading,
     error,
     login,
-    logout
+    logout,
+    isAdmin
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

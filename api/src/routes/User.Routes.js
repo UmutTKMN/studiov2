@@ -10,8 +10,11 @@ const upload = require("../middleware/upload");
 router.post("/register", validate(userSchemas.register), UserController.register);
 router.post("/login", validate(userSchemas.login), UserController.login);
 
+
 // Protected rotalar
 router.use(authenticate);
+
+router.post("/logout", authenticate, UserController.logout);
 
 router.get("/profile", UserController.getProfile);
 router.put("/profile", 

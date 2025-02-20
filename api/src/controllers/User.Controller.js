@@ -315,7 +315,7 @@ class UserController {
     }
   }
 
-  static async logoutUser(req, res, next) {
+  static async logout(req, res, next) {
     try {
       await ActivityLogService.logActivity(
         req.user.id,

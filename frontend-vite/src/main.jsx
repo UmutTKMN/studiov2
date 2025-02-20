@@ -1,12 +1,12 @@
-import React from "react";
-import { createRoot } from "react-dom/client";
-import "./style.css";
-import App from "./App.jsx";
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import { RouterProvider } from "react-router-dom"
+import { AuthProvider } from './context/AuthContext'
+import { router } from './routers/index'
+import "./style.css"
 
-// Enable React 18 concurrent features
-const root = createRoot(document.getElementById("root"));
-root.render(
-  <React.StrictMode>
-      <App />
-  </React.StrictMode>
-);
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <AuthProvider>
+    <RouterProvider router={router} />
+  </AuthProvider>
+)
