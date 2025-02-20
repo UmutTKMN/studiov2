@@ -7,6 +7,7 @@ import Categories from "../pages/Categories";
 import CategoryDetail from "../pages/CategoryDetail";
 import Projects from "../pages/Projects";
 import ProjectDetail from "../pages/ProjectDetail";
+import Login from "../pages/Login";
 
 
 export const router = createBrowserRouter([
@@ -21,6 +22,8 @@ export const router = createBrowserRouter([
       { path: "categories/:slug", element: <CategoryDetail /> },
       { path: "projects", element: <Projects /> },
       { path: "projects/:slug", element: <ProjectDetail /> },
+
+      { path: "login",  element: <Login /> },
     ], 
   },
 ]);

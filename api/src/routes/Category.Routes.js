@@ -7,9 +7,9 @@ const categorySchemas = require("../validators/category.validator");
 
 // Public rotalar
 router.get("/", CategoryController.getAllCategories);
-router.get("/:id", CategoryController.getCategory);
 router.get("/stats", CategoryController.getCategoryStats);
-router.get("/slug/:slug", CategoryController.getCategoryBySlug);
+router.get("/:slug", CategoryController.getCategoryBySlug);
+router.get("/:slug/posts", CategoryController.getCategoryPosts);
 
 router.use(authenticate);
 router.use(checkRole(["admin"]));

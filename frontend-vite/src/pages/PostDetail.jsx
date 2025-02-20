@@ -13,11 +13,11 @@ export default function PostDetail() {
       setLoading(true);
       try {
         const response = await postService.getPostBySlug(slug);
-        setPost(response.data.data); // Direkt olarak backend'den gelen veriyi kullan
+        setPost(response.data.post); // Direkt backend'den gelen post objesini kullan
         setError(null);
       } catch (err) {
-        setError("Yazı detayları yüklenirken bir hata oluştu.");
-        console.error("Yazı detay hatası:", err);
+        setError("Yazı yüklenirken bir hata oluştu");
+        console.error("Hata:", err);
       } finally {
         setLoading(false);
       }
@@ -26,136 +26,80 @@ export default function PostDetail() {
     fetchPost();
   }, [slug]);
 
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-[400px]">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-    </div>
-  );
-
-  if (error) return (
-    <div className="text-center">
-      <div className="bg-red-50 text-red-600 p-4 rounded-lg">
-        <h3 className="text-lg font-semibold mb-2">Hata</h3>
-        <p>{error}</p>
-        <Link to="/posts" className="text-blue-500 hover:underline mt-4 inline-block">
-          Yazılara Dön
-        </Link>
-      </div>
-    </div>
-  );
-
-  if (!post) return (
-    <div className="text-center">
-      <div className="bg-yellow-50 text-yellow-600 p-4 rounded-lg">
-        <h3 className="text-lg font-semibold mb-2">Yazı Bulunamadı</h3>
-        <p>Aradığınız yazı mevcut değil veya kaldırılmış olabilir.</p>
-        <Link to="/posts" className="text-blue-500 hover:underline mt-4 inline-block">
-          Yazılara Dön
-        </Link>
-      </div>
-    </div>
-  );
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "Belirtilmemiş";
-    try {
-      return new Date(dateString).toLocaleDateString('tr-TR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    } catch {
-      return "Geçersiz Tarih";
-    }
-  };
+  if (loading) return <div className="text-center py-10">Yükleniyor...</div>;
+  if (error) return <div className="text-red-600 text-center py-10">{error}</div>;
+  if (!post) return <div className="text-center py-10">Gönderi bulunamadı.</div>;
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <nav className="mb-6">
-        <Link to="/posts" className="text-blue-500 hover:underline flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10.707 4.293a1 1 0 010 1.414L7.414 9H15a1 1 0 110 2H7.414l3.293 3.293a1 1 0 01-1.414 1.414l-5-5a1 1 0 010-1.414l5-5a1 1 0 011.414 0z" clipRule="evenodd" />
-          </svg>
-          Yazılara Dön
-        </Link>
-      </nav>
+    <div>
+      <Link to="/posts" className="text-blue-500 hover:underline flex items-center gap-2 mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M10.707 4.293a1 1 0 010 1.414L7.414 9H15a1 1 0 110 2H7.414l3.293 3.293a1 1 0 01-1.414 1.414l-5-5a1 1 0 010-1.414l5-5a1 1 0 011.414 0z" clipRule="evenodd" />
+        </svg>
+        Yazılara Dön
+      </Link>
 
       <article className="bg-white rounded-xl shadow-lg overflow-hidden">
-        {post.image && (
+        {post?.post_image && (
           <div className="relative h-[400px]">
-            <img
-              src={post.image}
-              alt={post.title}
-              className="w-full h-full object-cover"
-            />
+            <img src={post.post_image} alt={post.post_title} className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
           </div>
         )}
 
         <div className="p-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">{post.title}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">{post?.post_title}</h1>
 
-          <div className="flex items-center gap-4 mb-8 border-b border-gray-100 pb-6">
-            {post.author_image ? (
-              <img
-                src={post.author_image}
-                alt={post.author_name}
-                className="w-12 h-12 rounded-full"
-              />
-            ) : (
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
                 <span className="text-gray-500 text-xl font-medium">
-                  {post.author_name?.charAt(0)}
+                  {post?.author_name?.charAt(0)}
                 </span>
               </div>
-            )}
-            <div className="flex-1">
-              <p className="text-sm text-gray-500">Yazar</p>
-              <p className="font-medium">{post.author_name}</p>
+              <div>
+                <p className="text-sm text-gray-500">Yazar</p>
+                <p className="font-medium">{post?.author_name}</p>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-500">Yayınlanma Tarihi</p>
-              <p className="text-sm">{formatDate(post.createdAt)}</p>
+            <div className="text-sm text-gray-500 text-right">
+              <div>Görüntülenme: {post?.post_views}</div>
+              <div>Beğeni: {post?.post_likes}</div>
+              <div>Yorum: {post?.post_comments}</div>
             </div>
           </div>
 
-          {post.excerpt && (
-            <div className="mb-8 text-lg text-gray-600 italic">
-              {post.excerpt}
+          {post?.post_excerpt && (
+            <div className="mb-6 text-lg text-gray-600 italic border-l-4 border-gray-200 pl-4">
+              {post.post_excerpt}
             </div>
           )}
 
           <div className="prose max-w-none mb-8">
-            <p className="text-gray-700 whitespace-pre-wrap">{post.content}</p>
+            <p className="text-gray-700 whitespace-pre-wrap">{post?.post_content}</p>
           </div>
 
-          <div className="mt-8 border-t border-gray-100 pt-6">
+          <div className="mt-6 pt-6 border-t border-gray-100">
             <div className="flex justify-between items-center text-sm text-gray-500">
-              <div>
-                {post.category && (
-                  <Link 
-                    to={`/categories/${post.category.slug}`}
-                    className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full hover:bg-blue-100"
-                  >
-                    {post.category.name}
-                  </Link>
+              <div className="flex items-center gap-2">
+                {post?.category_name && (
+                  <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full">
+                    {post.category_name}
+                  </span>
                 )}
               </div>
               <div>
-                Son güncelleme: {formatDate(post.updatedAt)}
+                <div>Oluşturulma: {new Date(post?.post_createdAt).toLocaleDateString('tr-TR')}</div>
+                <div>Güncelleme: {new Date(post?.post_updatedAt).toLocaleDateString('tr-TR')}</div>
               </div>
             </div>
           </div>
 
-          {post.tags && (
+          {post?.post_tags && (
             <div className="mt-6 pt-6 border-t border-gray-100">
-              <h3 className="text-sm font-medium text-gray-500 mb-3">Etiketler</h3>
               <div className="flex flex-wrap gap-2">
-                {post.tags.split(',').map((tag, index) => (
-                  <span
-                    key={index}
-                    className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"
-                  >
+                {post.post_tags.split(',').map((tag, index) => (
+                  <span key={index} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
                     {tag.trim()}
                   </span>
                 ))}

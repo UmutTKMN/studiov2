@@ -70,7 +70,7 @@ class App {
 
   routes() {
     // API Routes
-    this.app.use("/api/users", UserRoutes);
+    this.app.use("/api/auth", UserRoutes);
     this.app.use("/api/posts", PostRoutes);
     this.app.use("/api/projects", ProjectRoutes);
     this.app.use("/api/categories", CategoryRoutes);

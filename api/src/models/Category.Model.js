@@ -77,6 +77,7 @@ class Category {
         const categories = results ? results.map(category => ({
           id: category.category_id,
           name: category.category_name,
+          slug: category.category_slug,
           description: category.category_description,
           post_count: category.post_count || 0,
           created_at: category.category_createdAt,
@@ -183,6 +184,38 @@ class Category {
           category.posts = postResults || [];
           resolve(category);
         });
+      });
+    });
+  }
+
+  // Yeni metod ekle
+  static async getPostsBySlug(slug) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        SELECT 
+          p.post_id,
+          p.post_title,
+          p.post_slug,
+          p.post_excerpt,
+          p.post_content,
+          p.post_image,
+          p.post_createdAt,
+          p.post_updatedAt,
+          u.user_name as author_name,
+          u.user_profileImage as author_image
+        FROM posts p
+        INNER JOIN categories c ON p.post_category = c.category_id
+        LEFT JOIN users u ON p.post_author = u.user_id
+        WHERE c.category_slug = ?
+        ORDER BY p.post_createdAt DESC
+      `;
+
+      pool.query(query, [slug], (error, results) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve(results);
       });
     });
   }

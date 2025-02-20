@@ -6,11 +6,11 @@ class CategoryController {
     try {
       const categoryData = {
         category_name: req.body.category_name,
-        category_description: req.body.category_description
+        category_description: req.body.category_description,
       };
-      
+
       const newCategory = await CategoryService.createCategory(categoryData);
-      
+
       res.status(201).json({
         success: true,
         message: "Kategori başarıyla oluşturuldu",
@@ -18,7 +18,7 @@ class CategoryController {
           id: newCategory.insertId,
           ...categoryData,
           createdAt: new Date(),
-        }
+        },
       });
     } catch (error) {
       next(new ErrorHandler(error.message, 400));
@@ -39,8 +39,8 @@ class CategoryController {
           name: category.category_name,
           description: category.category_description,
           createdAt: category.category_createdAt,
-          updatedAt: category.category_updatedAt
-        }
+          updatedAt: category.category_updatedAt,
+        },
       });
     } catch (error) {
       next(new ErrorHandler(error.message, 404));
@@ -101,27 +101,33 @@ class CategoryController {
 
   static async getCategoryBySlug(req, res, next) {
     try {
-      const category = await CategoryService.getCategoryBySlug(req.params.slug);
+      const { slug } = req.params;
+      const category = await CategoryService.getCategoryBySlug(slug);
       if (!category) {
-        return next(new ErrorHandler("Kategori bulunamadı", 404));
+        return res.status(404).json({
+          success: false,
+          message: "Kategori bulunamadı",
+        });
       }
-
       res.status(200).json({
         success: true,
-        category: {
-          id: category.category_id,
-          name: category.category_name,
-          slug: category.category_slug,
-          description: category.category_description,
-          post_count: category.post_count,
-          createdAt: category.category_createdAt,
-          updatedAt: category.category_updatedAt
-        }
+        category,
       });
     } catch (error) {
-      next(new ErrorHandler(error.message, 404));
+      next(new ErrorHandler(error.message, 500));
+    }
+  }
+  static async getCategoryPosts(req, res, next) {
+    try {
+      const { slug } = req.params;
+      const posts = await CategoryService.getCategoryPosts(slug);
+      res.status(200).json({
+        success: true,
+        posts,
+      });
+    } catch (error) {
+      next(new ErrorHandler(error.message, 500));
     }
   }
 }
-
 module.exports = CategoryController;

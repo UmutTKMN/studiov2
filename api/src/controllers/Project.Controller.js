@@ -146,7 +146,7 @@ class ProjectController {
       }
       res.status(200).json({
         success: true,
-        data: project,
+        project,
       });
     } catch (error) {
       next(new ErrorHandler(error.message, 500));

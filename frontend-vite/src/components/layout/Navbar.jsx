@@ -1,9 +1,20 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Navbar() {
-
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Çıkış yapılırken hata:', error);
+    }
+  };
 
   const menuItems = [
     {
@@ -106,14 +117,10 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Ana Menü - Desktop */}
-          <div className="hidden md:flex items-center space-x-1">
-            {menuItems
-              .filter(
-                (item) =>
-                  !item.requireAuth || (item.requireAuth && isAuthenticated)
-              )
-              .map((item) => (
+          <div className="hidden md:flex items-center space-x-4">
+            {/* Ana Menü */}
+            <div className="flex items-center space-x-1">
+              {menuItems.map((item) => (
                 <Link
                   key={item.id}
                   to={item.path}
@@ -136,6 +143,31 @@ export default function Navbar() {
                   )}
                 </Link>
               ))}
+            </div>
+
+            {/* Auth Butonları */}
+            <div className="flex items-center ml-4 border-l pl-4">
+              {user ? (
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-gray-600">
+                    Merhaba, {user.user_name}
+                  </span>
+                  <button
+                    onClick={handleLogout}
+                    className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    Çıkış Yap
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                >
+                  Giriş Yap
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </div>

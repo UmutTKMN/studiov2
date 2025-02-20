@@ -1,5 +1,6 @@
 const Category = require("../models/Category.Model");
 const ActivityLogService = require("./ActivityLog.Service");
+const { getProjectBySlug } = require("./Project.Service");
 
 class CategoryService {
   static async createCategory(categoryData, userId) {
@@ -103,6 +104,35 @@ class CategoryService {
       return stats;
     } catch (error) {
       throw new Error("Kategori istatistikleri alma hatası: " + error.message);
+    }
+  }
+
+  static async getCategoryBySlug (slug) {
+    try {
+      const category = await Category.findBySlug(slug);
+      if (!category) {
+        throw new Error("Kategori bulunamadı");
+      }
+      return category;
+    } catch (error) {
+      throw new Error("Kategori alma hatası: " + error.message);
+    }
+  }
+  
+  static async getCategoryPosts(slug) {
+    try {
+      const category = await Category.findBySlug(slug);
+      if (!category) {
+        throw new Error("Kategori bulunamadı");
+      }
+
+      const posts = await Category.getPostsBySlug(slug);
+      return {
+        category,
+        posts
+      };
+    } catch (error) {
+      throw new Error(`Kategori yazıları alma hatası: ${error.message}`);
     }
   }
 }
