@@ -1,22 +1,17 @@
-import { Outlet } from 'react-router-dom';
-import AdminSidebar from '../components/AdminSidebar';
-import { useState } from 'react';
+import { Outlet } from "react-router-dom";
+import Sidebar from "../components/layout/Sidebar";
+import Header from "../components/layout/Header";
 
 const AdminLayout = () => {
-  const [isCollapsed] = useState(false);
-
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <AdminSidebar />
-      <div className={`flex-1 transition-all duration-300 
-        ${isCollapsed ? 'ml-[4.5rem]' : 'ml-[20rem]'}`}
-      >
-        <main className="p-6">
-          <div className="mx-auto max-w-7xl">
-            <Outlet />
-          </div>
-        </main>
-      </div>
+    <div className="bg-gray-100 min-h-screen">
+        <Sidebar />
+        <Header />
+      <main className="lg:pl-72 py-10">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <Outlet />
+        </div>
+      </main>
     </div>
   );
 };
