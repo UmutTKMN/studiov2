@@ -1,6 +1,4 @@
 import React, { memo } from "react";
-import { EllipsisHorizontalIcon } from "@heroicons/react/24/outline";
-import Button from "../ui/Button";
 
 const Table = memo(function Table({
   headers = [],
