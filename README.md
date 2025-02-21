@@ -7,7 +7,7 @@ Bu proje, React ve Tailwind CSS kullanarak oluşturulmuş bir web uygulamasıdı
 ### Gereksinimler
 
 - Node.js
-- npm veya pnpm
+- npm ve pnpm
 
 ### Kurulum
 
@@ -59,4 +59,4 @@ Katkıda bulunmak isterseniz, lütfen bir pull request gönderin veya bir sorun 
 
 ### Lisans
 
-Bu proje MIT Lisansı ile lisanslanmıştır.
+Bu proje [MIT Lisansı](LICENSE) ile lisanslanmıştır. Detaylı bilgi için `LICENSE` dosyasını inceleyebilirsiniz.
