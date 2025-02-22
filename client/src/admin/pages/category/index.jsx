@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { FolderPlus, EditPencil, Trash, Plus } from "iconoir-react";
 import Header from "../../components/table/Header";
 import Footer from "../../components/table/Footer";
 import Table from "../../components/table";
-import { postService } from "../../services/api";
-import { Plus, MultiplePages, EditPencil, Trash } from "iconoir-react";
+import { categoryService } from "../../services/api";
 
-function Posts() {
+function Categories() {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [data, setData] = useState([]);
@@ -14,25 +14,25 @@ function Posts() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchPosts = async () => {
+    const fetchCategories = async () => {
       setIsLoading(true);
       try {
-        const response = await postService.getAllPosts();
-        if (response?.data?.posts) {
-          setData(response.data.posts);
+        const response = await categoryService.getAllCategories();
+        if (response?.data?.categories) {
+          setData(response.data.categories);
         } else {
           setData([]);
         }
         setError(null);
       } catch (err) {
-        setError(`Error loading posts: ${err.message || "Please try again later."}`);
-        console.error("Error fetching posts:", err);
+        setError(`Kategoriler yüklenirken hata: ${err.message || "Lütfen tekrar deneyin."}`);
+        console.error("Kategori yükleme hatası:", err);
         setData([]);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchPosts();
+    fetchCategories();
   }, [currentPage]);
 
   const handleDelete = async (row) => {
@@ -41,66 +41,51 @@ function Posts() {
       return;
     }
 
-    const postId = row.id;
-
-    if (window.confirm('Bu postu silmek istediğinizden emin misiniz?')) {
+    if (window.confirm('Bu kategoriyi silmek istediğinizden emin misiniz?')) {
       setIsLoading(true);
       try {
-        await postService.deletePost(postId);
-        setData(prevData => prevData.filter(post => (post.id) !== postId));
-        // Optional: Toast mesajı göster
-        console.log('Post başarıyla silindi!');
+        await categoryService.deleteCategory(row.id);
+        setData(prevData => prevData.filter(category => category.id !== row.id));
+        console.log('Kategori başarıyla silindi!');
       } catch (err) {
-        setError(`Post silinirken hata oluştu: ${err.message || "Lütfen tekrar deneyin."}`);
-        console.error("Post silme hatası:", err);
+        setError(`Kategori silinirken hata: ${err.message || "Lütfen tekrar deneyin."}`);
+        console.error("Kategori silme hatası:", err);
       } finally {
         setIsLoading(false);
       }
     }
   };
 
-  const handleAddPost = () => {
-    navigate('/admin/posts/new'); // relative path kullanıyoruz
+  const handleAddCategory = () => {
+    navigate('/admin/categories/new');
   };
 
-  const handleEditPost = (row) => {
-    navigate(`/admin/posts/:id/edit`);
+  const handleEditCategory = (row) => {
+    navigate(`/admin/categories/${row.id}/edit`);
   };
 
   const headers = [
     {
-      key: "title",
-      label: "Başlık",
+      key: "name",
+      label: "Kategori Adı",
       render: (value, row) => (
         <div className="flex items-center">
-          <img src={row.image} className="w-8 h-8 mr-2 rounded" />
+          <FolderPlus className="w-5 h-5 mr-2 text-gray-500" />
           {value}
         </div>
       ),
     },
     {
-      key: "status",
-      label: "Durum",
+      key: "slug",
+      label: "URL",
+    },
+    {
+      key: "postCount",
+      label: "Yazı Sayısı",
       render: (value) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs ${
-            value === "active"
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
-          }`}
-        >
-          {value}
+        <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+          {value || 0}
         </span>
-      ),
-    },
-    {
-      key: "author",
-      label: "Yazar",
-      render: (value) => (
-        <div className="flex items-center">
-          <img src={value.image} className="w-8 h-8 mr-2 rounded" />
-          {value.name}
-        </div>
       ),
     },
     {
@@ -111,7 +96,7 @@ function Posts() {
         <div className="flex justify-end items-center gap-2">
           <button
             className="text-blue-500 hover:text-blue-700 p-1 rounded hover:bg-blue-50"
-            onClick={() => handleEditPost(row)}
+            onClick={() => handleEditCategory(row)}
           >
             <EditPencil className="h-5 w-5" />
           </button>
@@ -129,15 +114,15 @@ function Posts() {
   return (
     <div className="space-y-6">
       <Header
-        title="Yazılar"
-        icon={MultiplePages}
+        title="Kategoriler"
+        icon={FolderPlus}
         buttonProps={{
           variant: "gradient",
           color: "primary",
           size: "sm",
           icon: Plus,
-          children: "Yeni Yazı",
-          onClick: () => handleAddPost(),
+          children: "Yeni Kategori",
+          onClick: handleAddCategory,
         }}
       />
 
@@ -156,11 +141,11 @@ function Posts() {
       
       <Footer
         currentPage={currentPage}
-        totalPages={10} // API'den gelen toplam sayfa sayısı
-        onPageChange={(page) => setCurrentPage(page)}
+        totalPages={10}
+        onPageChange={setCurrentPage}
       />
     </div>
   );
 }
 
-export default Posts;
+export default Categories;

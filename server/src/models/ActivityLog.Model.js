@@ -1,5 +1,5 @@
-const mysql = require('mysql');
-const config = require('../config/config');
+const mysql = require("mysql");
+const config = require("../config/config");
 
 const pool = mysql.createPool(config.db);
 
@@ -19,7 +19,7 @@ class ActivityLog {
           logData.log_action,
           logData.log_table,
           logData.log_record_id,
-          logData.log_description
+          logData.log_description,
         ],
         (error, results) => {
           if (error) reject(error);
@@ -63,19 +63,98 @@ class ActivityLog {
     });
   }
 
-  static async getRecentActivity(limit = 10) {
+  static async getRecentActivity(page = 1, limit = 20, filters = {}) {
     return new Promise((resolve, reject) => {
-      const query = `
-        SELECT al.*, u.user_name
-        FROM activity_logs al
-        LEFT JOIN users u ON al.log_user_id = u.user_id
-        ORDER BY al.log_createdAt DESC
-        LIMIT ?`;
+      try {
+        const offset = (page - 1) * limit;
+        const params = [];
+        const conditions = [];
 
-      pool.query(query, [limit], (error, results) => {
-        if (error) reject(error);
-        resolve(results);
-      });
+        // Arama filtresi
+        if (filters.search && filters.search.trim() !== '') {
+          const searchValue = `%${filters.search.trim()}%`;
+          conditions.push(`(
+            al.log_description LIKE ? OR 
+            u.user_name LIKE ? OR 
+            al.log_table LIKE ? OR 
+            al.log_action LIKE ?
+          )`);
+          params.push(searchValue, searchValue, searchValue, searchValue);
+        }
+
+        // Diğer filtreler
+        if (filters.action) {
+          conditions.push('al.log_action = ?');
+          params.push(filters.action);
+        }
+
+        if (filters.table) {
+          conditions.push('al.log_table = ?');
+          params.push(filters.table);
+        }
+
+        const whereClause = conditions.length > 0 
+          ? `WHERE ${conditions.join(' AND ')}`
+          : '';
+
+        const sortOrder = filters.sortBy === 'asc' ? 'ASC' : 'DESC';
+
+        // Toplam kayıt sayısını al
+        const countQuery = `
+          SELECT COUNT(*) as total 
+          FROM activity_logs al
+          LEFT JOIN users u ON al.log_user_id = u.user_id
+          ${whereClause}
+        `;
+
+        // Verileri getir
+        const dataQuery = `
+          SELECT al.*, u.user_name
+          FROM activity_logs al
+          LEFT JOIN users u ON al.log_user_id = u.user_id
+          ${whereClause}
+          ORDER BY al.log_createdAt ${sortOrder}
+          LIMIT ? OFFSET ?
+        `;
+
+        // Önce toplam kayıt sayısını al
+        pool.query(countQuery, params, (error, countResult) => {
+          if (error) {
+            console.error('Count query error:', error);
+            reject(error);
+            return;
+          }
+
+          // Sonra verileri getir
+          pool.query(
+            dataQuery, 
+            [...params, parseInt(limit), parseInt(offset)],
+            (error, results) => {
+              if (error) {
+                console.error('Data query error:', error);
+                reject(error);
+                return;
+              }
+
+              const total = countResult[0].total;
+              
+              resolve({
+                data: results,
+                pagination: {
+                  total: total,
+                  currentPage: parseInt(page),
+                  totalPages: Math.ceil(total / limit),
+                  limit: parseInt(limit)
+                }
+              });
+            }
+          );
+        });
+
+      } catch (error) {
+        console.error('getRecentActivity error:', error);
+        reject(error);
+      }
     });
   }
 }

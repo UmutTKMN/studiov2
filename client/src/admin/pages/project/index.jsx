@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Archive, EditPencil, Trash, Plus } from "iconoir-react";
 import Header from "../../components/table/Header";
 import Footer from "../../components/table/Footer";
 import Table from "../../components/table";
-import { postService } from "../../services/api";
-import { Plus, MultiplePages, EditPencil, Trash } from "iconoir-react";
+import { projectService } from "../../services/api";
 
-function Posts() {
+function Projects() {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [data, setData] = useState([]);
@@ -14,68 +14,82 @@ function Posts() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchPosts = async () => {
+    const fetchProjects = async () => {
       setIsLoading(true);
       try {
-        const response = await postService.getAllPosts();
-        if (response?.data?.posts) {
-          setData(response.data.posts);
+        const response = await projectService.getAllProjects();
+        if (response?.data?.projects) {
+          setData(response.data.projects);
         } else {
           setData([]);
         }
         setError(null);
       } catch (err) {
-        setError(`Error loading posts: ${err.message || "Please try again later."}`);
-        console.error("Error fetching posts:", err);
+        setError(
+          `Projeler yüklenirken hata: ${
+            err.message || "Lütfen tekrar deneyin."
+          }`
+        );
+        console.error("Proje yükleme hatası:", err);
         setData([]);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchPosts();
+    fetchProjects();
   }, [currentPage]);
 
   const handleDelete = async (row) => {
     if (!row.id) {
-      console.error('Silme için geçerli ID bulunamadı:', row);
+      console.error("Silme için geçerli ID bulunamadı:", row);
       return;
     }
 
-    const postId = row.id;
-
-    if (window.confirm('Bu postu silmek istediğinizden emin misiniz?')) {
+    if (window.confirm("Bu projeyi silmek istediğinizden emin misiniz?")) {
       setIsLoading(true);
       try {
-        await postService.deletePost(postId);
-        setData(prevData => prevData.filter(post => (post.id) !== postId));
-        // Optional: Toast mesajı göster
-        console.log('Post başarıyla silindi!');
+        await projectService.deleteProject(row.id);
+        setData((prevData) =>
+          prevData.filter((project) => project.id !== row.id)
+        );
+        console.log("Proje başarıyla silindi!");
       } catch (err) {
-        setError(`Post silinirken hata oluştu: ${err.message || "Lütfen tekrar deneyin."}`);
-        console.error("Post silme hatası:", err);
+        setError(
+          `Proje silinirken hata: ${err.message || "Lütfen tekrar deneyin."}`
+        );
+        console.error("Proje silme hatası:", err);
       } finally {
         setIsLoading(false);
       }
     }
   };
 
-  const handleAddPost = () => {
-    navigate('/admin/posts/new'); // relative path kullanıyoruz
+  const handleAddProject = () => {
+    navigate("/admin/projects/new");
   };
 
-  const handleEditPost = (row) => {
-    navigate(`/admin/posts/:id/edit`);
+  const handleEditProject = (row) => {
+    navigate(`/admin/projects/${row.id}/edit`);
   };
 
   const headers = [
     {
       key: "title",
-      label: "Başlık",
+      label: "Proje Adı",
       render: (value, row) => (
         <div className="flex items-center">
-          <img src={row.image} className="w-8 h-8 mr-2 rounded" />
+          <img src={row.thumbnail} className="w-8 h-8 mr-2 rounded" />
           {value}
         </div>
+      ),
+    },
+    {
+      key: "category",
+      label: "Kategori",
+      render: (value) => (
+        <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+          {value}
+        </span>
       ),
     },
     {
@@ -94,16 +108,6 @@ function Posts() {
       ),
     },
     {
-      key: "author",
-      label: "Yazar",
-      render: (value) => (
-        <div className="flex items-center">
-          <img src={value.image} className="w-8 h-8 mr-2 rounded" />
-          {value.name}
-        </div>
-      ),
-    },
-    {
       key: "actions",
       label: "İşlemler",
       className: "text-right pr-4",
@@ -111,7 +115,7 @@ function Posts() {
         <div className="flex justify-end items-center gap-2">
           <button
             className="text-blue-500 hover:text-blue-700 p-1 rounded hover:bg-blue-50"
-            onClick={() => handleEditPost(row)}
+            onClick={() => handleEditProject(row)}
           >
             <EditPencil className="h-5 w-5" />
           </button>
@@ -123,21 +127,21 @@ function Posts() {
           </button>
         </div>
       ),
-    }
+    },
   ];
 
   return (
     <div className="space-y-6">
       <Header
-        title="Yazılar"
-        icon={MultiplePages}
+        title="Projeler"
+        icon={Archive}
         buttonProps={{
           variant: "gradient",
           color: "primary",
           size: "sm",
           icon: Plus,
-          children: "Yeni Yazı",
-          onClick: () => handleAddPost(),
+          children: "Yeni Proje",
+          onClick: handleAddProject,
         }}
       />
 
@@ -153,14 +157,14 @@ function Posts() {
           className="mt-4"
         />
       )}
-      
+
       <Footer
         currentPage={currentPage}
-        totalPages={10} // API'den gelen toplam sayfa sayısı
-        onPageChange={(page) => setCurrentPage(page)}
+        totalPages={10}
+        onPageChange={setCurrentPage}
       />
     </div>
   );
 }
 
-export default Posts;
+export default Projects;

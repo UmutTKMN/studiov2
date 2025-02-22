@@ -11,8 +11,8 @@ function Header() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const userNavigation = [
-    { name: "Your profile", to: "#" },
-    { name: "Sign out", to: "#" },
+    { name: "Profil Ayarları", to: "#" },
+    { name: "Çıkış Yap", to: "#" },
   ];
   return (
     <div className="lg:pl-72">

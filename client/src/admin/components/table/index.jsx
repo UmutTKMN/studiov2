@@ -1,4 +1,5 @@
 import React, { memo } from "react";
+import { InboxIcon } from "@heroicons/react/24/outline";
 
 const Table = memo(function Table({
   headers = [],
@@ -7,11 +8,23 @@ const Table = memo(function Table({
   isLoading = false,
   className = "",
 }) {
+  if (!isLoading && (!data || data.length === 0)) {
+    return (
+      <div className="text-center py-12 bg-white rounded-lg shadow">
+        <InboxIcon className="mx-auto h-12 w-12 text-gray-400" />
+        <h3 className="mt-2 text-sm font-medium text-gray-900">Veri bulunamadı</h3>
+        <p className="mt-1 text-sm text-gray-500">
+          Gösterilecek kayıt bulunmamaktadır.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="mt-8 flow-root">
       <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
         <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-          <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+          <div className="overflow-hidden shadow sm:rounded-lg">
             <table className="min-w-full divide-y divide-gray-300">
               <thead className="bg-gray-50">
                 <tr>
@@ -47,15 +60,6 @@ const Table = memo(function Table({
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-900" />
                         <span>Yükleniyor...</span>
                       </div>
-                    </td>
-                  </tr>
-                ) : data.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={headers.length + (actions.length ? 1 : 0)}
-                      className="px-6 py-4 text-center text-sm text-gray-500"
-                    >
-                      Gösterilecek veri bulunamadı
                     </td>
                   </tr>
                 ) : (

@@ -5,22 +5,18 @@ import {
   DialogPanel,
   TransitionChild,
 } from "@headlessui/react";
-import {
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
-import { MultiplePages, CodeBracketsSquare, SelectEdge3d, FolderPlus, Settings } from "iconoir-react";
+import { MultiplePages, SelectEdge3d, FolderPlus, ClockRotateRight, Settings, Archive, Xmark } from "iconoir-react";
 import { Link } from "react-router-dom";
 
 const navigation = [
-  { name: "Dashboard", to: "/admin", icon: SelectEdge3d, current: false},
-  { name: "Post", to: "/admin/posts", icon: MultiplePages, current: false },
-  { name: "Category", to: "/admin/categories", icon: FolderPlus, current: false },
-  { name: "Projects", to: "/admin/projects", icon: CodeBracketsSquare, current: false },
+  { name: "Anasayfa", to: "/admin", icon: SelectEdge3d, current: false},
+  { name: "Yazılar", to: "/admin/posts", icon: MultiplePages, current: false },
+  { name: "Kategoriler", to: "/admin/categories", icon: FolderPlus, current: false },
+  { name: "Projeler", to: "/admin/projects", icon: Archive, current: false },
+  { name: "Sistem Kayıtları", to: "/admin/activity-logs", icon: ClockRotateRight, current: false },
 ];
 const teams = [
   { id: 1, name: "Heroicons", to: "#", initial: "H", current: false },
-  { id: 2, name: "Tailwind Labs", to: "#", initial: "T", current: false },
-  { id: 3, name: "Workcation", to: "#", initial: "W", current: false },
 ];
 
 function classNames(...classes) {
@@ -55,7 +51,7 @@ export default function Example() {
                   className="-m-2.5 p-2.5"
                 >
                   <span className="sr-only">Close sidebar</span>
-                  <XMarkIcon
+                  <Xmark
                     aria-hidden="true"
                     className="h-6 w-6 text-white"
                   />
