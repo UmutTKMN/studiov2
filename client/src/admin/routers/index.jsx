@@ -8,6 +8,8 @@ import NewCategory from "../pages/category/New";
 // Project
 import AdminProjects from "../pages/project";
 import NewProject from "../pages/project/New";
+// Users
+import AdminUsers from "../pages/user";
 // Activity Logs
 import AdminActivityLogs from "../pages/logs";
 
@@ -40,6 +42,10 @@ export const adminRoutes = {
       path: "activity-logs",
       children: [{ index: true, element: <AdminActivityLogs /> }],
     },
+    {
+      path: "users", 
+      children: [{ index: true, element: <AdminUsers /> }],
+    }
   ],
 };
 

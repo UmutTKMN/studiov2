@@ -134,6 +134,94 @@ class UserService {
     }
   }
 
+  static async getAllUsers(params = {}) {
+    try {
+      let query = `
+        SELECT 
+          u.*,
+          r.role_name,
+          r.role_id
+        FROM users u
+        LEFT JOIN roles r ON u.user_role = r.role_id
+        WHERE u.user_isActive = 1
+      `;
+
+      const queryParams = [];
+
+      // Arama filtresi
+      if (params.search) {
+        query += ` AND (u.user_name LIKE ? OR u.user_email LIKE ? OR u.user_bio LIKE ?)`;
+        const searchTerm = `%${params.search}%`;
+        queryParams.push(searchTerm, searchTerm, searchTerm);
+      }
+
+      // Rol filtresi
+      if (params.role) {
+        query += ` AND u.user_role = ?`;
+        queryParams.push(params.role);
+      }
+
+      // Konum filtreleri
+      if (params.country) {
+        query += ` AND u.user_country = ?`;
+        queryParams.push(params.country);
+      }
+      if (params.city) {
+        query += ` AND u.user_city = ?`;
+        queryParams.push(params.city);
+      }
+
+      // Toplam kayıt sayısını al
+      const countQuery = query.replace(/SELECT .*? FROM/, 'SELECT COUNT(*) as total FROM');
+      
+      // Sıralama
+      const validColumns = ['user_name', 'user_email', 'user_createdAt', 'user_last_login'];
+      const sortBy = validColumns.includes(params.sortBy) ? params.sortBy : 'user_createdAt';
+      const sortOrder = params.sortOrder === 'ASC' ? 'ASC' : 'DESC';
+      query += ` ORDER BY ${sortBy} ${sortOrder}`;
+
+      // Sayfalama
+      const page = parseInt(params.page) || 1;
+      const limit = parseInt(params.limit) || 20;
+      const offset = (page - 1) * limit;
+      query += ` LIMIT ? OFFSET ?`;
+      queryParams.push(limit, offset);
+
+      return new Promise((resolve, reject) => {
+        pool.query(countQuery, queryParams.slice(0, -2), (error, countResults) => {
+          if (error) {
+            return reject(error);
+          }
+
+          const total = countResults[0].total;
+
+          pool.query(query, queryParams, (error, results) => {
+            if (error) {
+              return reject(error);
+            }
+
+            const users = results.map(user => {
+              const { user_password, reset_token, ...safeUser } = user;
+              return safeUser;
+            });
+
+            resolve({
+              users,
+              pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+              }
+            });
+          });
+        });
+      });
+    } catch (error) {
+      throw new Error("Kullanıcılar getirilemedi: " + error.message);
+    }
+  }
+
   static async getUserById(userId) {
     try {
       const user = await User.findById(userId);

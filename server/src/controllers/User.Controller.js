@@ -170,6 +170,56 @@ class UserController {
     }
   }
 
+  static async getAllUsers(req, res, next) {
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 20;
+      
+      const filters = {
+        page,
+        limit,
+        search: req.query.search,
+        role: req.query.role,
+        sortBy: req.query.sortBy || 'user_createdAt',
+        sortOrder: req.query.sortOrder?.toUpperCase() || 'DESC',
+        country: req.query.country,
+        city: req.query.city
+      };
+
+      const result = await UserService.getAllUsers(filters);
+
+      res.status(200).json({
+        success: true,
+        users: result.users.map((user) => ({
+          id: user.user_id,
+          name: user.user_name,
+          email: user.user_email,
+          bio: user.user_bio,
+          role: {
+            id: user.role_id,
+            name: user.role_name
+          },
+          location: {
+            country: user.user_country,
+            city: user.user_city
+          },
+          profileImage: user.user_profileImage,
+          createdAt: user.user_createdAt,
+          lastLogin: user.user_last_login
+        })),
+        pagination: {
+          page: result.pagination.page,
+          limit: result.pagination.limit,
+          total: result.pagination.total,
+          totalPages: result.pagination.totalPages
+        }
+      });
+    }
+    catch (error) {
+      next(new ErrorHandler(error.message, 400));
+    }
+  }
+
   static async getUserById(req, res, next) {
     try {
       const user = await UserService.getUserById(req.params.id);
