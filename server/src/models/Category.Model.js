@@ -29,32 +29,35 @@ class Category {
     });
   }
 
-  static async findById(id) {
-    return new Promise((resolve, reject) => {
-      pool.query(
-        "SELECT * FROM categories WHERE category_id = ?",
-        [id],
-        (error, results) => {
-          if (error) reject(error);
-          resolve(results[0]);
-        }
-      );
-    });
-  }
-
   static async findBySlug(slug) {
     return new Promise((resolve, reject) => {
       const query = `
-        SELECT c.*, 
-               COUNT(p.post_id) as post_count 
+        SELECT 
+          c.*,
+          COUNT(p.post_id) as post_count 
         FROM categories c
         LEFT JOIN posts p ON c.category_id = p.post_category
         WHERE c.category_slug = ?
         GROUP BY c.category_id`;
 
       pool.query(query, [slug], (error, results) => {
-        if (error) reject(error);
-        resolve(results[0]);
+        if (error) {
+          reject(error);
+          return;
+        }
+        
+        // Sonuçları formatlayarak döndür
+        const category = results && results[0] ? {
+          id: results[0].category_id,
+          name: results[0].category_name,
+          slug: results[0].category_slug,
+          description: results[0].category_description,
+          post_count: results[0].post_count || 0,
+          created_at: results[0].category_createdAt,
+          updated_at: results[0].category_updatedAt
+        } : null;
+
+        resolve(category);
       });
     });
   }
@@ -89,16 +92,21 @@ class Category {
     });
   }
 
-  static async update(id, categoryData) {
+  static async updateBySlug(slug, categoryData) {
     return new Promise((resolve, reject) => {
       let updateFields = [];
       let queryParams = [];
+
+      if (Object.keys(categoryData).length === 0) {
+        reject(new Error('Güncellenecek veri bulunamadı'));
+        return;
+      }
 
       if (categoryData.category_name) {
         updateFields.push('category_name = ?');
         queryParams.push(categoryData.category_name);
         
-        // İsim değiştiğinde slug'ı da güncelle
+        // İsim değiştiğinde yeni slug oluştur
         updateFields.push('category_slug = ?');
         queryParams.push(slugify(categoryData.category_name, { 
           lower: true, 
@@ -112,24 +120,37 @@ class Category {
         queryParams.push(categoryData.category_description);
       }
 
-      queryParams.push(id);
+      updateFields.push('category_updatedAt = CURRENT_TIMESTAMP');
+      queryParams.push(slug);
 
-      const query = `UPDATE categories SET ${updateFields.join(', ')} WHERE category_id = ?`;
+      const query = `UPDATE categories SET ${updateFields.join(', ')} WHERE category_slug = ?`;
       
       pool.query(query, queryParams, (error, results) => {
-        if (error) reject(error);
-        resolve(results);
+        if (error) {
+          reject(error);
+        } else {
+          resolve(results);
+        }
       });
     });
   }
 
-  static async delete(id) {
+  static async deleteBySlug(slug) {
     return new Promise((resolve, reject) => {
       pool.query(
-        "DELETE FROM categories WHERE category_id = ?",
-        [id],
+        "DELETE FROM categories WHERE category_slug = ?",
+        [slug],
         (error, results) => {
-          if (error) reject(error);
+          if (error) {
+            reject(error);
+            return;
+          }
+          
+          if (results.affectedRows === 0) {
+            reject(new Error('Kategori bulunamadı'));
+            return;
+          }
+          
           resolve(results);
         }
       );
@@ -188,7 +209,6 @@ class Category {
     });
   }
 
-  // Yeni metod ekle
   static async getPostsBySlug(slug) {
     return new Promise((resolve, reject) => {
       const query = `

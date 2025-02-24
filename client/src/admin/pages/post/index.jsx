@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Header from "../../components/table/Header";
 import Footer from "../../components/table/Footer";
 import Table from "../../components/table";
-import { postService } from "../../services/api";
+import { postService } from "../../services/postService";
 import { Plus, MultiplePages, EditPencil, Trash } from "iconoir-react";
 
 function Posts() {
@@ -60,7 +60,7 @@ function Posts() {
   };
 
   const handleAddPost = () => {
-    navigate('/admin/posts/new'); // relative path kullanıyoruz
+    navigate('/admin/posts/new');
   };
 
   const handleEditPost = (row) => {

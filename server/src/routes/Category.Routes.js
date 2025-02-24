@@ -20,10 +20,10 @@ router.post(
   CategoryController.createCategory
 );
 router.put(
-  "/:id",
+  "/:slug",
   validate(categorySchemas.update),
   CategoryController.updateCategory
 );
-router.delete("/:id", CategoryController.deleteCategory);
+router.delete("/:slug", CategoryController.deleteCategory);
 
 module.exports = router;

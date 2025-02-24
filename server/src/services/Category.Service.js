@@ -1,6 +1,5 @@
 const Category = require("../models/Category.Model");
 const ActivityLogService = require("./ActivityLog.Service");
-const { getProjectBySlug } = require("./Project.Service");
 
 class CategoryService {
   static async createCategory(categoryData, userId) {
@@ -21,18 +20,6 @@ class CategoryService {
     }
   }
 
-  static async getCategoryById(categoryId) {
-    try {
-      const category = await Category.findByIdWithPosts(categoryId);
-      if (!category) {
-        throw new Error("Kategori bulunamadı");
-      }
-      return category;
-    } catch (error) {
-      throw new Error("Kategori alma hatası: " + error.message);
-    }
-  }
-
   static async getAllCategories() {
     try {
       const categories = await Category.findAll();
@@ -49,42 +36,58 @@ class CategoryService {
     }
   }
 
-  static async updateCategory(categoryId, categoryData, userId) {
+  static async updateCategoryBySlug(slug, categoryData, userId) {
     try {
-      await Category.update(categoryId, categoryData);
+      const category = await Category.findBySlug(slug);
+      if (!category) {
+        throw new Error("Kategori bulunamadı");
+      }
+
+      const result = await Category.updateBySlug(slug, categoryData);
       
       await ActivityLogService.logActivity(
         userId,
         'UPDATE',
         'categories',
-        categoryId,
-        `Kategori güncellendi: ${categoryData.category_name}`
+        category.category_id,
+        `Kategori güncellendi: ${categoryData.category_name || category.category_name}`
       );
 
-      return await Category.findById(categoryId);
+      return await Category.findBySlug(slug);
     } catch (error) {
       throw new Error("Kategori güncelleme hatası: " + error.message);
     }
   }
 
-  static async deleteCategory(categoryId, userId) {
+  static async deleteCategory(slug, userId) {
     try {
-      const category = await Category.findById(categoryId);
-      if (!category) throw new Error("Kategori bulunamadı");
+      // Önce kategoriyi bul
+      const category = await Category.findBySlug(slug);
+      if (!category) {
+        throw new Error("Kategori bulunamadı");
+      }
 
-      await Category.delete(categoryId);
+      // Kategoriye ait yazı var mı kontrol et
+      const postCount = await Category.getPostCount(category.id);
+      if (postCount > 0) {
+        throw new Error("Bu kategoriye ait yazılar bulunmaktadır. Önce yazıları silmeniz gerekmektedir.");
+      }
+
+      // Kategoriyi sil
+      await Category.deleteBySlug(slug);
       
+      // Aktivite logunu kaydet
       await ActivityLogService.logActivity(
         userId,
         'DELETE',
         'categories',
-        categoryId,
-        `Kategori silindi: ${category.category_name}`
+        category.id,
+        `Kategori silindi: ${category.name}`
       );
 
       return true;
     } catch (error) {
-      throw new Error("Kategori silme hatası: " + error.message);
+      throw new Error(`Kategori silme hatası: ${error.message}`);
     }
   }
 
@@ -107,15 +110,21 @@ class CategoryService {
     }
   }
 
-  static async getCategoryBySlug (slug) {
+  static async getCategoryBySlug(slug) {
     try {
+      if (!slug) {
+        throw new Error("Kategori slug'ı gereklidir");
+      }
+
       const category = await Category.findBySlug(slug);
+      
       if (!category) {
         throw new Error("Kategori bulunamadı");
       }
+
       return category;
     } catch (error) {
-      throw new Error("Kategori alma hatası: " + error.message);
+      throw new Error(`Kategori alma hatası: ${error.message}`);
     }
   }
   

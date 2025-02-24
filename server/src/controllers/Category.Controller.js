@@ -61,10 +61,24 @@ class CategoryController {
 
   static async updateCategory(req, res, next) {
     try {
-      const updatedCategory = await CategoryService.updateCategory(
-        req.params.id,
-        req.body
+      const { slug } = req.params;
+      
+      if (!slug) {
+        return next(new ErrorHandler("Kategori slug'ı gereklidir", 400));
+      }
+
+      const categoryData = {};
+      if (req.body.category_name) categoryData.category_name = req.body.category_name;
+      if (req.body.category_description !== undefined) {
+        categoryData.category_description = req.body.category_description;
+      }
+
+      const updatedCategory = await CategoryService.updateCategoryBySlug(
+        slug,
+        categoryData,
+        req.user?.id
       );
+
       res.status(200).json({
         success: true,
         message: "Kategori başarıyla güncellendi",
@@ -77,12 +91,23 @@ class CategoryController {
 
   static async deleteCategory(req, res, next) {
     try {
-      await CategoryService.deleteCategory(req.params.id);
+      const { slug } = req.params;
+      
+      if (!slug) {
+        return next(new ErrorHandler("Kategori slug'ı gereklidir", 400));
+      }
+
+      await CategoryService.deleteCategory(slug, req.user?.id);
+      
       res.status(200).json({
         success: true,
-        message: "Kategori başarıyla silindi",
+        status: "success",
+        message: "Kategori başarıyla silindi"
       });
     } catch (error) {
+      if (error.message.includes('yazılar bulunmaktadır')) {
+        return next(new ErrorHandler(error.message, 409)); // Conflict
+      }
       next(new ErrorHandler(error.message, 400));
     }
   }
@@ -102,21 +127,31 @@ class CategoryController {
   static async getCategoryBySlug(req, res, next) {
     try {
       const { slug } = req.params;
+      
+      if (!slug) {
+        return next(new ErrorHandler("Kategori slug'ı gereklidir", 400));
+      }
+
       const category = await CategoryService.getCategoryBySlug(slug);
+      
       if (!category) {
         return res.status(404).json({
           success: false,
           message: "Kategori bulunamadı",
+          status: "not_found"
         });
       }
+
       res.status(200).json({
         success: true,
-        category,
+        status: "success",
+        category
       });
     } catch (error) {
       next(new ErrorHandler(error.message, 500));
     }
   }
+
   static async getCategoryPosts(req, res, next) {
     try {
       const { slug } = req.params;

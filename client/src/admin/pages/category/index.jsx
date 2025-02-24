@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FolderPlus, EditPencil, Trash, Plus } from "iconoir-react";
+import { toast } from "react-hot-toast"; // Toast import ekle
 import Header from "../../components/table/Header";
 import Footer from "../../components/table/Footer";
 import Table from "../../components/table";
-import { categoryService } from "../../services/api";
+import { categoryService } from "../../services/categoryService";
 
 function Categories() {
   const navigate = useNavigate();
@@ -26,6 +27,7 @@ function Categories() {
         setError(null);
       } catch (err) {
         setError(`Kategoriler yüklenirken hata: ${err.message || "Lütfen tekrar deneyin."}`);
+        toast.error("Kategoriler yüklenirken bir hata oluştu");
         console.error("Kategori yükleme hatası:", err);
         setData([]);
       } finally {
@@ -36,20 +38,19 @@ function Categories() {
   }, [currentPage]);
 
   const handleDelete = async (row) => {
-    if (!row.id) {
-      console.error('Silme için geçerli ID bulunamadı:', row);
+    if (!row.slug) {
+      toast.error('Silme için geçerli slug bulunamadı');
       return;
     }
 
     if (window.confirm('Bu kategoriyi silmek istediğinizden emin misiniz?')) {
       setIsLoading(true);
       try {
-        await categoryService.deleteCategory(row.id);
-        setData(prevData => prevData.filter(category => category.id !== row.id));
-        console.log('Kategori başarıyla silindi!');
+        await categoryService.deleteCategory(row.slug);
+        setData(prevData => prevData.filter(category => category.slug !== row.slug));
+        toast.success('Kategori başarıyla silindi!');
       } catch (err) {
-        setError(`Kategori silinirken hata: ${err.message || "Lütfen tekrar deneyin."}`);
-        console.error("Kategori silme hatası:", err);
+        toast.error(err.response?.data?.message || "Kategori silinirken bir hata oluştu");
       } finally {
         setIsLoading(false);
       }
@@ -61,7 +62,7 @@ function Categories() {
   };
 
   const handleEditCategory = (row) => {
-    navigate(`/admin/categories/${row.id}/edit`);
+    navigate(`/admin/categories/edit/${row.slug}`);
   };
 
   const headers = [
@@ -71,16 +72,17 @@ function Categories() {
       render: (value, row) => (
         <div className="flex items-center">
           <FolderPlus className="w-5 h-5 mr-2 text-gray-500" />
-          {value}
+          <span className="font-medium">{value}</span>
         </div>
       ),
     },
     {
       key: "slug",
       label: "URL",
+      render: (value) => <code className="text-sm bg-gray-100 px-2 py-1 rounded">{value}</code>
     },
     {
-      key: "postCount",
+      key: "post_count",
       label: "Yazı Sayısı",
       render: (value) => (
         <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">

@@ -1,3 +1,4 @@
+import ProtectedRoute from "../security/ProtectedRoute";
 // Post
 import AdminLayout from "../layout";
 import AdminPosts from "../pages/post";
@@ -5,6 +6,7 @@ import NewPost from "../pages/post/New";
 // Category
 import AdminCategories from "../pages/category";
 import NewCategory from "../pages/category/New";
+import EditCategeory from "../pages/category/Edit";
 // Project
 import AdminProjects from "../pages/project";
 import NewProject from "../pages/project/New";
@@ -15,7 +17,11 @@ import AdminActivityLogs from "../pages/logs";
 
 export const adminRoutes = {
   path: "admin",
-  element: <AdminLayout />,
+  element:(
+    <ProtectedRoute>
+      <AdminLayout />
+    </ProtectedRoute>
+  ),
   children: [
     {
       path: "posts",
@@ -29,6 +35,7 @@ export const adminRoutes = {
       children: [
         { index: true, element: <AdminCategories /> },
         { path: "new", element: <NewCategory /> },
+        { path: "edit/:slug", element: <EditCategeory /> },
       ],
     },
     {

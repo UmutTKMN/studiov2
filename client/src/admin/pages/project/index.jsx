@@ -4,7 +4,7 @@ import { Archive, EditPencil, Trash, Plus } from "iconoir-react";
 import Header from "../../components/table/Header";
 import Footer from "../../components/table/Footer";
 import Table from "../../components/table";
-import { projectService } from "../../services/api";
+import { projectService } from "../../services/projectService";
 
 function Projects() {
   const navigate = useNavigate();

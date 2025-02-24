@@ -3,7 +3,7 @@ import { ClockRotateRight } from "iconoir-react";
 import Header from "../../components/table/Header";
 import Footer from "../../components/table/Footer";
 import Table from "../../components/table";
-import { activityLogService } from "../../services/api";
+import { activityLogService } from "../../services/activityLogService";
 import Select from "../../components/ui/Select";
 import Input from "../../components/ui/Input";
 

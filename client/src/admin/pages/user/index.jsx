@@ -10,7 +10,7 @@ import {
 import Header from "../../components/table/Header";
 import Footer from "../../components/table/Footer";
 import Table from "../../components/table";
-import { userService } from "../../services/api";
+import { userService } from "../../services/userService";
 import { formatDate } from "../../utils/dateUtils";
 import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
