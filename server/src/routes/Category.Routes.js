@@ -7,23 +7,14 @@ const categorySchemas = require("../validators/category.validator");
 
 // Public rotalar
 router.get("/", CategoryController.getAllCategories);
-router.get("/stats", CategoryController.getCategoryStats);
-router.get("/:slug", CategoryController.getCategoryBySlug);
-router.get("/:slug/posts", CategoryController.getCategoryPosts);
+router.get("/:identifier", CategoryController.getCategory);
 
+// Protected rotalar
 router.use(authenticate);
 router.use(checkRole(["admin"]));
 
-router.post(
-  "/",
-  validate(categorySchemas.create),
-  CategoryController.createCategory
-);
-router.put(
-  "/:slug",
-  validate(categorySchemas.update),
-  CategoryController.updateCategory
-);
-router.delete("/:slug", CategoryController.deleteCategory);
+router.post("/", validate(categorySchemas.create), CategoryController.createCategory);
+router.put("/:identifier", validate(categorySchemas.update), CategoryController.updateCategory);
+router.delete("/:identifier", CategoryController.deleteCategory);
 
 module.exports = router;

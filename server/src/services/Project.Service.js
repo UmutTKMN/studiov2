@@ -4,27 +4,9 @@ const ActivityLogService = require("./ActivityLog.Service");
 class ProjectService {
   static async createProject(projectData) {
     try {
-      // Zorunlu alanları kontrol et
-      if (!projectData.project_owner) {
-        throw new Error("Proje sahibi (owner) bilgisi eksik");
-      }
-
-      if (!projectData.project_title) {
-        throw new Error("Proje başlığı gerekli");
-      }
-
-      if (!projectData.project_description) {
-        throw new Error("Proje açıklaması gerekli");
-      }
-
-      console.log("Creating project with data:", projectData); // Debug için
-
       const result = await Project.create(projectData);
+      const newProject = await Project.findByIdOrSlug(result.insertId);
 
-      // Yeni oluşturulan projeyi getir
-      const newProject = await Project.findById(result.insertId);
-
-      // Aktivite logu ekle
       await ActivityLogService.logActivity(
         projectData.project_owner,
         "CREATE",
@@ -35,127 +17,75 @@ class ProjectService {
 
       return newProject;
     } catch (error) {
-      console.error("Project service error:", error); // Debug için
-      throw new Error("Proje yazısı oluşturma hatası: " + error.message);
+      throw new Error("Proje oluşturma hatası: " + error.message);
+    }
+  }
+
+  static async getProject(identifier) {
+    try {
+      const project = await Project.findByIdOrSlug(identifier);
+      if (!project) throw new Error("Proje bulunamadı");
+      return project;
+    } catch (error) {
+      throw new Error(`Proje alma hatası: ${error.message}`);
     }
   }
 
   static async getAllProjects(filters = {}) {
     try {
-      const projects = await Project.findAll(filters);
-
-      if (!projects || projects.length === 0) {
-        return [];
-      }
-
-      // Proje verilerini düzenle
-      const formattedProjects = projects.map((project) => {
-        return {
-          id: project.project_id,
-          title: project.project_title,
-          slug: project.project_slug,
-          description: project.project_description,
-          owner: project.project_owner,
-          tags: project.project_tags,
-          status: project.project_status,
-          startDate: project.project_start_date,
-          endDate: project.project_end_date,
-          budget: project.project_budget,
-          image: project.project_image,
-        };
-      });
-
-      return formattedProjects;
+      return await Project.findAll(filters);
     } catch (error) {
-      console.error("Get all projects error:", error); // Debug için
-      throw new Error("Proje alma hatası: " + error.message);
+      throw new Error("Projeleri alma hatası: " + error.message);
     }
   }
 
-  static async getProjectById(projectId) {
+  static async updateProject(identifier, userId, projectData) {
     try {
-      const project = await Project.findById(projectId);
-      if (!project) {
-        throw new Error("Proje bulunamadı");
+      const project = await Project.findByIdOrSlug(identifier);
+      if (!project) throw new Error("Proje bulunamadı");
+      
+      if (project.project_owner !== userId) {
+        throw new Error("Bu projeyi güncelleme yetkiniz yok");
       }
-      return project;
-    } catch (error) {
-      throw new Error("Proje alma hatası: " + error.message);
-    }
-  }
 
-  static async updateProject(projectId, userId, projectData) {
-    try {
-      const project = await Project.findById(projectId);
-      if (!project) {
-        throw new Error("Proje bulunamadı");
-      }
-      if (project.user_id !== userId) {
-        throw new Error("Bu işlem için yetkiniz yok");
-      }
-      await Project.update(projectId, projectData);
+      await Project.update(identifier, projectData);
 
-      // Aktivite logu ekle
       await ActivityLogService.logActivity(
         userId,
         "UPDATE",
         "projects",
-        projectId,
-        `Proje güncellendi: ${
-          projectData.project_title || project.project_title
-        }`
+        project.project_id,
+        `Proje güncellendi: ${projectData.project_title || project.project_title}`
       );
 
-      return {
-        ...(await Project.findById(projectId)),
-        description: projectData.description,
-      };
+      return await Project.findByIdOrSlug(identifier);
     } catch (error) {
       throw new Error("Proje güncelleme hatası: " + error.message);
     }
   }
 
-  static async deleteProject(projectId, userId) {
+  static async deleteProject(identifier, userId) {
     try {
-      console.log("Deleting project:", { projectId, userId }); // Debug için
+      const project = await Project.findByIdOrSlug(identifier);
+      if (!project) throw new Error("Proje bulunamadı");
 
-      const project = await Project.findById(projectId);
-      if (!project) {
-        throw new Error("Proje bulunamadı");
-      }
-
-      // project_owner alanını kontrol et
       if (project.project_owner !== userId) {
-        throw new Error("Bu işlem için yetkiniz yok");
+        throw new Error("Bu projeyi silme yetkiniz yok");
       }
 
-      await Project.delete(projectId);
-
-      // Aktivite logu ekle
+      await Project.delete(identifier);
+      
       await ActivityLogService.logActivity(
         userId,
         "DELETE",
         "projects",
-        projectId,
+        project.project_id,
         `Proje silindi: ${project.project_title}`
       );
 
       return true;
     } catch (error) {
-      console.error("Delete project error:", error); // Debug için
       throw new Error("Proje silme hatası: " + error.message);
-    }
-  }
-
-  static async getProjectBySlug(slug) {
-    try {
-      const project = await Project.findBySlug(slug);
-      if (!project) {
-        throw new Error("Proje bulunamadı");
-      }
-      return project;
-    } catch (error) {
-      throw new Error("Proje alma hatası: " + error.message);
     }
   }
 }

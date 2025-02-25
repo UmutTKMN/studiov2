@@ -11,17 +11,9 @@ router.use(checkRole(["admin"]));
 
 router.post("/", validate(roleSchemas.create), RoleController.createRole);
 router.get("/", RoleController.getAllRoles);
-router.get("/stats", RoleController.getRoleStats);
-router.get("/:id", RoleController.getRole);
-router.put("/:id", validate(roleSchemas.update), RoleController.updateRole);
-router.delete("/:id", RoleController.deleteRole);
-
-// Rol atama
-router.post(
-  "/assign/:userId",
-  validate(roleSchemas.assign),
-  RoleController.assignRole
-);
-router.get("/user/:userId", RoleController.getUserRole);
+router.get("/:identifier", RoleController.getRole);
+router.put("/:identifier", validate(roleSchemas.update), RoleController.updateRole);
+router.delete("/:identifier", RoleController.deleteRole);
+router.post("/assign/:userId", validate(roleSchemas.assign), RoleController.assignRole);
 
 module.exports = router;

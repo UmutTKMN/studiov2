@@ -1,116 +1,66 @@
 const mysql = require("mysql");
 const config = require("../config/config");
-const slugify = require('slugify'); // Slug oluşturmak için ekleyin
+const slugify = require("slugify");
 
 const pool = mysql.createPool(config.db);
 
 class Post {
   static async create(postData) {
     return new Promise((resolve, reject) => {
-      const slug = slugify(postData.post_title, { lower: true, strict: true });
-      const query = `
-        INSERT INTO posts (
-          post_title, post_slug, post_excerpt, post_content, 
-          post_author, post_category, post_tags, post_image, 
-          post_status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-
-      pool.query(
-        query,
-        [
-          postData.post_title,
-          slug,
-          postData.post_excerpt,
-          postData.post_content,
-          postData.post_author,
-          postData.post_category,
-          postData.post_tags,
-          postData.post_image,
-          postData.post_status || 'draft'
-        ],
-        (error, results) => {
-          if (error) reject(error);
-          resolve(results);
+      // Gerekli kontroller
+      const requiredFields = ['post_title', 'post_content', 'post_author', 'post_category'];
+      for (const field of requiredFields) {
+        if (!postData[field]) {
+          return reject(new Error(`${field} alanı zorunludur`));
         }
-      );
-    });
-  }
+      }
 
-  static async findById(id) {
-    return new Promise((resolve, reject) => {
-      const query = `
-        SELECT p.*, 
-               u.user_name as author_name, 
-               u.user_profileImage as author_image,
-               c.category_name as category_name,
-               p.post_author
-        FROM posts p 
-        LEFT JOIN users u ON p.post_author = u.user_id 
-        LEFT JOIN categories c ON p.post_category = c.category_id 
-        WHERE p.post_id = ?`;
-
-      pool.query(query, [id], (error, results) => {
-        if (error) {
-          console.error('Find post by id error:', error);
-          return reject(error);
-        }
-        resolve(results[0]);
+      // Slug oluştur
+      const slug = slugify(postData.post_title, {
+        lower: true,
+        strict: true,
+        locale: "tr",
+        remove: /[*+~.()'"!:@]/g
       });
-    });
-  }
 
-  static async findBySlug(slug) {
-    return new Promise((resolve, reject) => {
-      const query = `
-        SELECT p.*, 
-               u.user_name as author_name, 
-               u.user_profileImage as author_image,
-               c.category_name as category_name
-        FROM posts p 
-        LEFT JOIN users u ON p.post_author = u.user_id 
-        LEFT JOIN categories c ON p.post_category = c.category_id 
-        WHERE p.post_slug = ?`;
+      const insertData = {
+        ...postData,
+        post_slug: slug,
+        post_excerpt: postData.post_excerpt || '',
+        post_tags: postData.post_tags || '',
+        post_status: postData.post_status || 'draft',
+        post_createdAt: new Date()
+      };
 
-      pool.query(query, [slug], (error, results) => {
-        if (error) reject(error);
-        resolve(results[0]);
+      pool.query('INSERT INTO posts SET ?', insertData, (error, results) => {
+        if (error) return reject(error);
+        resolve(results);
       });
     });
   }
 
   static async findAll(filters = {}) {
     return new Promise((resolve, reject) => {
-      // Basit bir sorgu ile post tablosunu kontrol et 
-      const checkQuery = "SELECT COUNT(*) as count FROM posts";
-      pool.query(checkQuery, [], (error, countResult) => {
-        if (error) {
-          console.error('Check query error:', error);
-          return reject(error);
-        }
-        console.log('Total posts in database:', countResult[0].count); // Debug için
-      });
-
       let query = `
         SELECT 
-          p.*, 
-          u.user_name as author_name, 
+          p.*,
+          u.user_name as author_name,
           u.user_profileImage as author_image,
-          c.category_name
-        FROM posts p 
-        LEFT JOIN users u ON p.post_author = u.user_id 
+          c.category_name,
+          c.category_slug
+        FROM posts p
+        LEFT JOIN users u ON p.post_author = u.user_id
         LEFT JOIN categories c ON p.post_category = c.category_id
-        WHERE 1=1`;  
+        WHERE 1=1
+      `;
 
       const queryParams = [];
-
-      // Status kontrolünü değiştir - test için tüm postları getir
+      
+      // Filtreleri uygula
       if (filters.status) {
         query += " AND p.post_status = ?";
         queryParams.push(filters.status);
       }
-      // else {
-      //   query += " AND p.post_status = 'published'";
-      // }
 
       if (filters.category) {
         query += " AND p.post_category = ?";
@@ -122,27 +72,19 @@ class Post {
         queryParams.push(filters.author);
       }
 
-      if (filters.search) {
-        query += " AND (p.post_title LIKE ? OR p.post_content LIKE ?)";
-        queryParams.push(`%${filters.search}%`, `%${filters.search}%`);
-      }
-
-      // Sıralama
+      // Sıralama ve sayfalama
       query += " ORDER BY p.post_createdAt DESC";
-
-      // Sayfalama
-      if (filters.limit) {
-        const limit = parseInt(filters.limit);
-        const page = parseInt(filters.page) || 1;
-        const offset = (page - 1) * limit;
-        
+      
+      if (filters.limit > 0) {
+        const page = Math.max(1, filters.page || 1);
+        const offset = (page - 1) * filters.limit;
         query += " LIMIT ? OFFSET ?";
-        queryParams.push(limit, offset);
+        queryParams.push(parseInt(filters.limit), offset);
       }
 
       pool.query(query, queryParams, (error, results) => {
         if (error) {
-          console.error('Find all posts error:', error);
+          console.error('Posts getirme hatası:', error);
           return reject(error);
         }
         resolve(results || []);
@@ -150,48 +92,24 @@ class Post {
     });
   }
 
-  static async update(id, postData) {
+  static async findById(id) {
     return new Promise((resolve, reject) => {
-      let updateFields = [];
-      let queryParams = [];
+      const query = `
+        SELECT p.*, 
+               u.user_name as author_name, 
+               u.user_profileImage as author_image,
+               c.category_name as category_name,
+               c.category_slug as category_slug
+        FROM posts p 
+        LEFT JOIN users u ON p.post_author = u.user_id 
+        LEFT JOIN categories c ON p.post_category = c.category_id 
+        WHERE p.post_id = ?`;
 
-      if (postData.post_title) {
-        updateFields.push('post_title = ?');
-        queryParams.push(postData.post_title);
-        
-        // Başlık değiştiyse slug da güncelle
-        updateFields.push('post_slug = ?');
-        queryParams.push(slugify(postData.post_title, { lower: true, strict: true }));
-      }
-
-      const updatableFields = [
-        'post_excerpt', 'post_content', 'post_category', 
-        'post_tags', 'post_image', 'post_status'
-      ];
-
-      updatableFields.forEach(field => {
-        if (postData[field] !== undefined) {
-          updateFields.push(`${field} = ?`);
-          queryParams.push(postData[field]);
+      pool.query(query, [id], (error, results) => {
+        if (error) {
+          return reject(error);
         }
-      });
-
-      queryParams.push(id);
-
-      const query = `UPDATE posts SET ${updateFields.join(', ')} WHERE post_id = ?`;
-      
-      pool.query(query, queryParams, (error, results) => {
-        if (error) reject(error);
-        resolve(results);
-      });
-    });
-  }
-
-  static async delete(id) {
-    return new Promise((resolve, reject) => {
-      pool.query("DELETE FROM posts WHERE post_id = ?", [id], (error, results) => {
-        if (error) reject(error);
-        resolve(results);
+        resolve(results[0]);
       });
     });
   }
@@ -215,7 +133,7 @@ class Post {
   static async incrementViews(id) {
     return new Promise((resolve, reject) => {
       pool.query(
-        'UPDATE posts SET post_views = post_views + 1 WHERE post_id = ?',
+        "UPDATE posts SET post_views = post_views + 1 WHERE post_id = ?",
         [id],
         (error, results) => {
           if (error) reject(error);
@@ -227,9 +145,9 @@ class Post {
 
   static async updateLikes(id, increment = true) {
     return new Promise((resolve, reject) => {
-      const query = increment 
-        ? 'UPDATE posts SET post_likes = post_likes + 1 WHERE post_id = ?'
-        : 'UPDATE posts SET post_likes = post_likes - 1 WHERE post_id = ?';
+      const query = increment
+        ? "UPDATE posts SET post_likes = post_likes + 1 WHERE post_id = ?"
+        : "UPDATE posts SET post_likes = post_likes - 1 WHERE post_id = ?";
 
       pool.query(query, [id], (error, results) => {
         if (error) reject(error);
@@ -238,20 +156,151 @@ class Post {
     });
   }
 
-  static async findBySlug(slug) {
+  static async findByIdentifier(identifier) {
     return new Promise((resolve, reject) => {
       const query = `
         SELECT p.*, 
                u.user_name as author_name, 
                u.user_profileImage as author_image,
-               c.category_name as category_name
+               c.category_name as category_name,
+               c.category_slug as category_slug
         FROM posts p 
         LEFT JOIN users u ON p.post_author = u.user_id 
         LEFT JOIN categories c ON p.post_category = c.category_id 
-        WHERE p.post_slug = ?`;
+        WHERE p.post_id = ? OR p.post_slug = ?`;
 
-      pool.query(query, [slug], (error, results) => {
-        if (error) reject(error);
+      pool.query(query, [identifier, identifier], (error, results) => {
+        if (error) {
+          console.error("Find post error:", error);
+          return reject(error);
+        }
+        resolve(results[0]);
+      });
+    });
+  }
+
+  static async update(identifier, postData) {
+    return new Promise((resolve, reject) => {
+      // Önce postu bul
+      this.findByIdOrSlug(identifier)
+        .then((post) => {
+          if (!post) {
+            return reject(new Error("Blog yazısı bulunamadı"));
+          }
+
+          let updateFields = [];
+          let queryParams = [];
+
+          if (postData.post_title) {
+            updateFields.push("post_title = ?");
+            queryParams.push(postData.post_title);
+
+            // Başlık değiştiğinde slug'ı da güncelle
+            updateFields.push("post_slug = ?");
+            queryParams.push(
+              slugify(postData.post_title, {
+                lower: true,
+                strict: true,
+                locale: "tr",
+              })
+            );
+          }
+
+          if (postData.post_excerpt !== undefined) {
+            updateFields.push("post_excerpt = ?");
+            queryParams.push(postData.post_excerpt);
+          }
+
+          if (postData.post_content !== undefined) {
+            updateFields.push("post_content = ?");
+            queryParams.push(postData.post_content);
+          }
+
+          if (postData.post_category !== undefined) {
+            updateFields.push("post_category = ?");
+            queryParams.push(postData.post_category);
+          }
+
+          if (postData.post_status !== undefined) {
+            updateFields.push("post_status = ?");
+            queryParams.push(postData.post_status);
+          }
+
+          if (postData.post_image) {
+            updateFields.push("post_image = ?");
+            queryParams.push(postData.post_image);
+          }
+
+          // Updated_at alanını güncelle
+          updateFields.push("post_updatedAt = CURRENT_TIMESTAMP");
+
+          queryParams.push(post.post_id); // WHERE koşulu için post_id
+
+          const query = `UPDATE posts SET ${updateFields.join(
+            ", "
+          )} WHERE post_id = ?`;
+
+          pool.query(query, queryParams, (error, results) => {
+            if (error) {
+              return reject(error);
+            }
+            resolve(results);
+          });
+        })
+        .catch(reject);
+    });
+  }
+
+  static async delete(identifier) {
+    return new Promise((resolve, reject) => {
+      // Önce postu bul
+      this.findByIdOrSlug(identifier)
+        .then((post) => {
+          if (!post) {
+            return reject(new Error("Blog yazısı bulunamadı"));
+          }
+
+          // Postu sil
+          pool.query(
+            "DELETE FROM posts WHERE post_id = ?",
+            [post.post_id],
+            (error, results) => {
+              if (error) {
+                return reject(error);
+              }
+
+              if (results.affectedRows === 0) {
+                return reject(new Error("Blog yazısı silinemedi"));
+              }
+
+              resolve(results);
+            }
+          );
+        })
+        .catch(reject);
+    });
+  }
+
+  static async findByIdOrSlug(identifier) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        SELECT 
+          p.*,
+          u.user_name as author_name,
+          u.user_profileImage as author_image,
+          c.category_name,
+          c.category_slug
+        FROM posts p
+        LEFT JOIN users u ON p.post_author = u.user_id
+        LEFT JOIN categories c ON p.post_category = c.category_id
+        WHERE p.post_id = ? OR p.post_slug = ?
+      `;
+
+      pool.query(query, [identifier, identifier], (error, results) => {
+        if (error) {
+          console.error("Post arama hatası:", error);
+          return reject(error);
+        }
         resolve(results[0]);
       });
     });

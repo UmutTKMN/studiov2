@@ -16,7 +16,6 @@ const ProjectRoutes = require("./routes/Project.Routes");
 const CategoryRoutes = require("./routes/Category.Routes");
 const RoleRoutes = require("./routes/Role.Routes");
 const ActivityLogRoutes = require("./routes/ActiviyLog.Routes");
-
 const FeedbackRoutes = require("./feedback/routes/Feedback.Routes");
 
 class App {
@@ -77,7 +76,6 @@ class App {
     this.app.use("/api/categories", CategoryRoutes);
     this.app.use("/api/roles", RoleRoutes);
     this.app.use("/api/activity-logs", ActivityLogRoutes);
-
     this.app.use("/api/feedback", FeedbackRoutes);
 
     // Root Route

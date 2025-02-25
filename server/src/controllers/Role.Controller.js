@@ -4,7 +4,7 @@ const { ErrorHandler } = require('../middleware/error');
 class RoleController {
     static async createRole(req, res, next) {
         try {
-            const newRole = await RoleService.createRole(req.body);
+            const newRole = await RoleService.createRole(req.body, req.user.id);
             res.status(201).json({
                 success: true,
                 message: 'Rol başarıyla oluşturuldu',
@@ -17,7 +17,7 @@ class RoleController {
 
     static async getRole(req, res, next) {
         try {
-            const role = await RoleService.getRoleById(req.params.id);
+            const role = await RoleService.getRole(req.params.identifier);
             res.status(200).json({
                 success: true,
                 role
@@ -42,8 +42,9 @@ class RoleController {
     static async updateRole(req, res, next) {
         try {
             const updatedRole = await RoleService.updateRole(
-                req.params.id,
-                req.body
+                req.params.identifier,
+                req.body,
+                req.user.id
             );
             res.status(200).json({
                 success: true,
@@ -57,7 +58,7 @@ class RoleController {
 
     static async deleteRole(req, res, next) {
         try {
-            await RoleService.deleteRole(req.params.id);
+            await RoleService.deleteRole(req.params.identifier, req.user.id);
             res.status(200).json({
                 success: true,
                 message: 'Rol başarıyla silindi'
@@ -71,7 +72,8 @@ class RoleController {
         try {
             const role = await RoleService.assignRoleToUser(
                 req.params.userId,
-                req.body.roleId
+                req.body.roleId,
+                req.user.id
             );
             res.status(200).json({
                 success: true,
@@ -108,4 +110,4 @@ class RoleController {
     }
 }
 
-module.exports = RoleController; 
+module.exports = RoleController;

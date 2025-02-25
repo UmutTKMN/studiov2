@@ -1,108 +1,138 @@
-const mysql = require('mysql');
-const config = require('../config/config');
+const mysql = require("mysql");
+const config = require("../config/config");
 
 const pool = mysql.createPool(config.db);
 
 class Role {
-    static async create(roleData) {
-        return new Promise((resolve, reject) => {
-            const query = 'INSERT INTO roles (role_name, role_description) VALUES (?, ?)';
-            pool.query(
-                query,
-                [roleData.role_name, roleData.role_description],
-                (error, results) => {
-                    if (error) reject(error);
-                    resolve(results);
-                }
-            );
-        });
-    }
+  static async create(roleData) {
+    return new Promise((resolve, reject) => {
+      const query = `
+                INSERT INTO roles SET ?
+            `;
 
-    static async findById(id) {
-        return new Promise((resolve, reject) => {
-            pool.query(
-                'SELECT * FROM roles WHERE role_id = ?',
-                [id],
-                (error, results) => {
-                    if (error) reject(error);
-                    resolve(results[0]);
-                }
-            );
-        });
-    }
+      pool.query(
+        query,
+        {
+          role_name: roleData.name,
+          role_description: roleData.description,
+          role_createdAt: new Date(),
+        },
+        (error, results) => {
+          if (error) return reject(error);
+          resolve(results);
+        }
+      );
+    });
+  }
 
-    static async findByName(name) {
-        return new Promise((resolve, reject) => {
-            pool.query(
-                'SELECT * FROM roles WHERE name = ?',
-                [name],
-                (error, results) => {
-                    if (error) reject(error);
-                    resolve(results[0]);
-                }
-            );
-        });
-    }
+  static async findByIdOrName(identifier) {
+    return new Promise((resolve, reject) => {
+      const query = `
+                SELECT * FROM roles 
+                WHERE role_id = ? OR role_name = ?
+            `;
 
-    static async findAll() {
-        return new Promise((resolve, reject) => {
-            pool.query(
-                'SELECT * FROM roles ORDER BY name ASC',
-                (error, results) => {
-                    if (error) reject(error);
-                    resolve(results);
-                }
-            );
-        });
-    }
+      pool.query(query, [identifier, identifier], (error, results) => {
+        if (error) return reject(error);
+        resolve(results[0]);
+      });
+    });
+  }
 
-    static async update(id, roleData) {
-        return new Promise((resolve, reject) => {
-            const query = 'UPDATE roles SET name = ?, description = ? WHERE id = ?';
-            pool.query(
-                query,
-                [roleData.name, roleData.description, id],
-                (error, results) => {
-                    if (error) reject(error);
-                    resolve(results);
-                }
-            );
-        });
-    }
+  static async findAll() {
+    return new Promise((resolve, reject) => {
+      const query = `
+                SELECT r.*, 
+                       COUNT(u.user_id) as user_count
+                FROM roles r
+                LEFT JOIN users u ON r.role_id = u.user_role
+                GROUP BY r.role_id
+                ORDER BY r.role_name ASC
+            `;
 
-    static async delete(id) {
-        return new Promise((resolve, reject) => {
-            pool.query('DELETE FROM roles WHERE id = ?', [id], (error, results) => {
-                if (error) reject(error);
-                resolve(results);
-            });
-        });
-    }
+      pool.query(query, (error, results) => {
+        if (error) return reject(error);
+        resolve(results);
+      });
+    });
+  }
 
-    static async assignToUser(userId, roleId) {
-        return new Promise((resolve, reject) => {
-            const query = 'UPDATE users SET user_role = ? WHERE user_id = ?';
-            pool.query(query, [roleId, userId], (error, results) => {
-                if (error) reject(error);
-                resolve(results);
-            });
-        });
-    }
+  static async update(identifier, roleData) {
+    return new Promise((resolve, reject) => {
+      const updateFields = [];
+      const queryParams = [];
 
-    static async getUserRole(userId) {
-        return new Promise((resolve, reject) => {
-            const query = `
+      if (roleData.name) {
+        updateFields.push("role_name = ?");
+        queryParams.push(roleData.name);
+      }
+
+      if (roleData.description !== undefined) {
+        updateFields.push("role_description = ?");
+        queryParams.push(roleData.description);
+      }
+
+      updateFields.push("role_updatedAt = CURRENT_TIMESTAMP");
+      queryParams.push(identifier, identifier);
+
+      const query = `
+                UPDATE roles 
+                SET ${updateFields.join(", ")} 
+                WHERE role_id = ? OR role_name = ?
+            `;
+
+      pool.query(query, queryParams, (error, results) => {
+        if (error) return reject(error);
+        resolve(results);
+      });
+    });
+  }
+
+  static async delete(identifier) {
+    return new Promise((resolve, reject) => {
+      const query = `
+                DELETE FROM roles 
+                WHERE role_id = ? OR role_name = ?
+            `;
+
+      pool.query(query, [identifier, identifier], (error, results) => {
+        if (error) return reject(error);
+        resolve(results);
+      });
+    });
+  }
+
+  static async assignToUser(userId, roleId) {
+    return new Promise((resolve, reject) => {
+      const query = `
+                UPDATE users 
+                SET user_role = ?, 
+                    user_updatedAt = CURRENT_TIMESTAMP 
+                WHERE user_id = ?
+            `;
+
+      pool.query(query, [roleId, userId], (error, results) => {
+        if (error) return reject(error);
+        resolve(results);
+      });
+    });
+  }
+
+  static async getUserRole(userId) {
+    return new Promise((resolve, reject) => {
+      const query = `
                 SELECT r.* 
                 FROM roles r 
                 JOIN users u ON u.user_role = r.role_id 
                 WHERE u.user_id = ?
             `;
-            pool.query(query, [userId], (error, results) => {
-                if (error) reject(error);
-                resolve(results[0]);
-            });
-        });
-    }
+
+      pool.query(query, [userId], (error, results) => {
+        if (error) return reject(error);
+        resolve(results[0]);
+      });
+    });
+  }
 }
 
 module.exports = Role;

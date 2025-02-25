@@ -6,29 +6,25 @@ const projectSchemas = require("../validators/project.validator");
 const { authenticate, checkRole } = require("../middleware/auth");
 
 // Public routes
-router.get("/", ProjectController.getAllProjects); // Filtreleme opsiyonel olsun
-router.get("/:slug", ProjectController.getProjectBySlug);
-router.get("/user/:userId", ProjectController.getUserProjects);
-router.get("/search", ProjectController.searchProjects);
+router.get("/", ProjectController.getAllProjects);
+router.get("/:identifier", ProjectController.getProject);
 
-// Project CRUD operations
-router.post(
-  "/",
-  authenticate,
+// Protected routes
+router.use(authenticate);
+
+router.post("/", 
   checkRole(["admin"]),
-  validate(projectSchemas.create),
+  validate(projectSchemas.create), 
   ProjectController.createProject
 );
-router.put(
-  "/:id",
-  authenticate,
+
+router.put("/:identifier",
   checkRole(["admin"]),
   validate(projectSchemas.update),
   ProjectController.updateProject
 );
-router.delete(
-  "/:id",
-  authenticate,
+
+router.delete("/:identifier",
   checkRole(["admin"]),
   ProjectController.deleteProject
 );

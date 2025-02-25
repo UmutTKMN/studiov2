@@ -4,40 +4,32 @@ const { ErrorHandler } = require("../middleware/error");
 class PostController {
   static async createPost(req, res, next) {
     try {
-      // Post verilerini hazırla
       const postData = {
         post_title: req.body.post_title,
         post_excerpt: req.body.post_excerpt,
         post_content: req.body.post_content,
-        post_author: req.user.id, // Kullanıcı ID'sini doğru şekilde al
-        post_category: req.body.post_category,
+        post_author: req.user.id,
+        post_category: parseInt(req.body.post_category),
         post_tags: req.body.post_tags,
-        post_image: req.file?.filename || req.body.post_image,
-        post_status: req.body.post_status || 'draft'
+        post_status: req.body.post_status
       };
-
-      console.log('Creating post with data:', postData); // Debug için
 
       const newPost = await PostService.createPost(postData);
 
       res.status(201).json({
         success: true,
         message: "Blog yazısı başarıyla oluşturuldu",
-        post: newPost,
+        post: newPost
       });
     } catch (error) {
-      console.error('Post creation error:', error); // Debug için
       next(new ErrorHandler(error.message, 400));
     }
   }
 
   static async getPost(req, res, next) {
     try {
-      const post = await PostService.getPostById(req.params.id);
-      res.status(200).json({
-        success: true,
-        post,
-      });
+      const post = await PostService.getPost(req.params.identifier);
+      res.status(200).json({ success: true, post });
     } catch (error) {
       next(new ErrorHandler(error.message, 404));
     }
@@ -45,16 +37,8 @@ class PostController {
 
   static async getAllPosts(req, res, next) {
     try {
-      const filters = {
-        ...req.query,
-        limit: req.query.limit ? parseInt(req.query.limit) : undefined
-      };
-      
-      const posts = await PostService.getAllPosts(filters);
-      res.status(200).json({
-        success: true,
-        posts: posts
-      });
+      const posts = await PostService.getAllPosts(req.query);
+      res.status(200).json({ success: true, posts });
     } catch (error) {
       next(new ErrorHandler(error.message, 400));
     }
@@ -62,28 +46,11 @@ class PostController {
 
   static async updatePost(req, res, next) {
     try {
-      console.log('Update request:', {
-        postId: req.params.id,
-        userId: req.user.id,
-        userRole: req.user.role,
-        body: req.body
-      });
-
-      const postData = {
-        post_title: req.body.post_title,
-        post_excerpt: req.body.post_excerpt,
-        post_content: req.body.post_content,
-        post_category: req.body.post_category,
-        post_tags: req.body.post_tags,
-        post_status: req.body.post_status,
-        post_image: req.file?.filename || req.body.post_image
-      };
-
       const updatedPost = await PostService.updatePost(
-        req.params.id,
+        req.params.identifier,
         req.user.id,
         req.user.role,
-        postData
+        req.body
       );
 
       res.status(200).json({
@@ -92,21 +59,14 @@ class PostController {
         post: updatedPost
       });
     } catch (error) {
-      console.error('Update post error:', error);
       next(new ErrorHandler(error.message, 400));
     }
   }
 
   static async deletePost(req, res, next) {
     try {
-      console.log('Delete request:', {
-        postId: req.params.id,
-        userId: req.user.id,
-        userRole: req.user.role
-      });
-
       await PostService.deletePost(
-        req.params.id,
+        req.params.identifier,
         req.user.id,
         req.user.role
       );
@@ -116,7 +76,6 @@ class PostController {
         message: "Blog yazısı başarıyla silindi"
       });
     } catch (error) {
-      console.error('Delete post error:', error);
       next(new ErrorHandler(error.message, 400));
     }
   }
@@ -154,26 +113,6 @@ class PostController {
       });
     } catch (error) {
       next(new ErrorHandler(error.message, 400));
-    }
-  }
-
-  static async getPostBySlug(req, res, next) {
-    try {
-      const slug = req.params.slug;
-      const post = await PostService.getPostBySlug(slug);
-
-      if (!post) {
-        return res.status(404).json({
-          success: false,
-          message: "Blog yazısı bulunamadı",
-        });
-      }
-      res.status(200).json({
-        success: true,
-        post,
-      });
-    }catch (error) {
-      next(new ErrorHandler(error.message, 500));
     }
   }
 }
