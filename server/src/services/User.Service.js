@@ -561,6 +561,42 @@ class UserService {
       throw new Error("Profil bilgileri alınamadı: " + error.message);
     }
   }
+
+  static async getAdminUsers() {
+    try {
+      return new Promise((resolve, reject) => {
+        const query = `
+          SELECT u.user_id, u.user_name, u.user_email, u.user_profileImage, 
+                 u.user_createdAt, u.user_last_login, r.role_name
+          FROM users u
+          JOIN roles r ON u.user_role = r.role_id
+          WHERE r.role_name = 'admin' AND u.user_isActive = 1
+          ORDER BY u.user_name ASC
+        `;
+
+        pool.query(query, [], (error, results) => {
+          if (error) {
+            return reject(error);
+          }
+
+          // Hassas bilgileri çıkar
+          const adminUsers = results.map(user => ({
+            id: user.user_id,
+            name: user.user_name,
+            email: user.user_email,
+            profileImage: user.user_profileImage,
+            role: user.role_name,
+            createdAt: user.user_createdAt,
+            lastLogin: user.user_last_login
+          }));
+
+          resolve(adminUsers);
+        });
+      });
+    } catch (error) {
+      throw new Error("Admin kullanıcıları getirilemedi: " + error.message);
+    }
+  }
 }
 
 // Uygulama kapanırken pool'u temizle

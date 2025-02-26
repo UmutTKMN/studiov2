@@ -1,48 +1,45 @@
 const express = require("express");
 const router = express.Router();
 const UserController = require("../controllers/User.Controller");
-const { authenticate } = require("../middleware/auth");
+const { authenticate, checkRole } = require("../middleware/auth");
 const validate = require("../middleware/validate");
 const userSchemas = require("../validators/user.validator");
-const upload = require("../middleware/upload");
 
-// Public rotalar
-router.post("/register", validate(userSchemas.register), UserController.register);
+// Public routes
+router.post(
+  "/register",
+  validate(userSchemas.register),
+  UserController.register
+);
 router.post("/login", validate(userSchemas.login), UserController.login);
-router.get("/users", UserController.getAllUsers);
 
-// Protected rotalar
+// Protected routes - Tüm kullanıcılar
 router.use(authenticate);
 
-router.post("/logout", authenticate, UserController.logout);
-
+// Kullanıcı profil işlemleri - Authenticated
 router.get("/profile", UserController.getProfile);
-router.put("/profile", 
-    validate(userSchemas.updateProfile),
-    upload.fields([
-        { name: 'profile_picture', maxCount: 1 },
-        { name: 'banner_picture', maxCount: 1 }
-    ]),
-    UserController.updateProfile
+router.put(
+  "/profile",
+  validate(userSchemas.updateProfile),
+  UserController.updateProfile
 );
-
-// Profil fotoğrafı işlemleri
-router.post("/profile-picture", 
-    upload.single('profile_picture'), 
-    UserController.uploadProfilePicture
+router.post(
+  "/change-password",
+  validate(userSchemas.changePassword),
+  UserController.changePassword
 );
+router.post("/logout", UserController.logout);
 
-router.post("/banner-picture", 
-    upload.single('banner_picture'), 
-    UserController.uploadBannerPicture
+// Admin routes - Sadece admin yetkisi olanlar
+router.get("/users", checkRole(["admin"]), UserController.getAllUsers);
+router.get(
+  "/login-history",
+  checkRole(["admin"]),
+  UserController.getLoginHistory
 );
+// Admin kullanıcılarını getir
+router.get("/staff-teams", checkRole(["admin"]), UserController.getAdminUsers);
 
-router.delete("/remove-profile-picture", UserController.removeProfilePicture);
-router.delete("/remove-banner-picture", UserController.removeBannerPicture);
-
-// Kullanıcı bilgileri
-router.get("/:id", UserController.getUserById);
-
-router.get("/login-history", authenticate, UserController.getLoginHistory);
+router.get("/:id", checkRole(["admin"]), UserController.getUserById);
 
 module.exports = router;

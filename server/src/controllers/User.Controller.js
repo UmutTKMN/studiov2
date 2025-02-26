@@ -365,6 +365,19 @@ class UserController {
     }
   }
 
+  static async getAdminUsers(req, res, next) {
+    try {
+      const adminUsers = await UserService.getAdminUsers();
+      
+      res.status(200).json({
+        success: true,
+        adminUsers
+      });
+    } catch (error) {
+      next(new ErrorHandler(error.message, 400));
+    }
+  }
+
   static async logout(req, res, next) {
     try {
       await ActivityLogService.logActivity(

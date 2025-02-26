@@ -5,15 +5,16 @@ import {
   DialogPanel,
   TransitionChild,
 } from "@headlessui/react";
-import { MultiplePages, SelectEdge3d, FolderPlus, ClockRotateRight, Settings, Archive, Xmark, Group } from "iconoir-react";
+import { MultiplePages, FolderPlus, ClockRotateRight, Settings, Archive, Xmark, Group, ReportColumns, Notes } from "iconoir-react";
 import { Link } from "react-router-dom";
 
 const navigation = [
-  { name: "Anasayfa", to: "/admin", icon: SelectEdge3d, current: false},
+  { name: "Anasayfa", to: "/admin", icon: ReportColumns, current: false},
   { name: "Yazılar", to: "/admin/posts", icon: MultiplePages, current: false },
   { name: "Kategoriler", to: "/admin/categories", icon: FolderPlus, current: false },
   { name: "Projeler", to: "/admin/projects", icon: Archive, current: false },
   { name: "Üyeler" , to: "/admin/users", icon: Group, current: false },
+  { name: "Biletler", to: "/admin/tickets", icon: Notes, current: false },
   { name: "Sistem Kayıtları", to: "/admin/activity-logs", icon: ClockRotateRight, current: false },
 ];
 const teams = [

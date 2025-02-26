@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
-const config = require("../config/config");
+const config = require("@config");
+const logger = require("../utils/logger");
 
 const authenticate = (req, res, next) => {
   try {
@@ -39,7 +40,7 @@ const authenticate = (req, res, next) => {
         id: decodedToken.userId,
         email: decodedToken.email,
         role: decodedToken.role?.name || decodedToken.role,
-        permissions: decodedToken.permissions
+        permissions: decodedToken.permissions || []
       };
 
       next();
@@ -55,16 +56,21 @@ const authenticate = (req, res, next) => {
     }
 
   } catch (error) {
+    logger.error(`Kimlik doğrulama hatası: ${error.message}`);
     return res.status(401).json({
       success: false,
       message: "Kimlik doğrulama hatası",
-      error: error.message,
       isTokenExpired: true
     });
   }
 };
 
 const checkRole = (roles = []) => {
+  // Tek bir rol gönderilirse array'e çevir
+  if (typeof roles === 'string') {
+    roles = [roles];
+  }
+
   return (req, res, next) => {
     try {
       if (!req.user) {
@@ -76,21 +82,24 @@ const checkRole = (roles = []) => {
       }
 
       const userRole = req.user.role;
+      
+      // Admin her zaman erişebilir veya belirtilen rollere sahip kullanıcılar erişebilir
       if (userRole === 'admin' || roles.includes(userRole)) {
         next();
       } else {
+        logger.warn(`Yetkisiz erişim girişimi: ${req.user.email}, Rol: ${userRole}, İstenen: ${roles}`);
         return res.status(403).json({
           success: false,
           message: "Bu işlem için yetkiniz yok",
-          isTokenExpired: false // Yetki hatası olduğunu belirt
+          isTokenExpired: false
         });
       }
 
     } catch (error) {
+      logger.error(`Yetki kontrolü hatası: ${error.message}`);
       return res.status(403).json({
         success: false,
         message: "Yetki kontrolü hatası",
-        error: error.message,
         isTokenExpired: false
       });
     }

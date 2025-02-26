@@ -9,6 +9,7 @@ class Socket {
       cors: {
         origin: config.cors.origin,
         methods: ["GET", "POST"],
+        credentials: true,
       },
     });
 
@@ -19,34 +20,44 @@ class Socket {
   initialize() {
     this.io.use(this.authenticate);
     this.io.on("connection", this.handleConnection.bind(this));
+    logger.info("Socket.io sunucusu başlatıldı");
   }
 
   authenticate(socket, next) {
-    const token = socket.handshake.auth.token;
-    if (!token) {
-      return next(new Error("Authentication error"));
-    }
-
     try {
+      const token = socket.handshake.auth.token;
+      if (!token) {
+        return next(new Error("Kimlik doğrulama hatası: Token bulunamadı"));
+      }
+
       const decoded = jwt.verify(token, config.jwt.secret);
       socket.user = decoded;
       next();
     } catch (err) {
-      next(new Error("Authentication error"));
+      logger.error(`Socket kimlik doğrulama hatası: ${err.message}`);
+      next(new Error("Kimlik doğrulama hatası"));
     }
   }
 
   handleConnection(socket) {
-    logger.info(`User connected: ${socket.user.id}`);
-    this.users.set(socket.user.id, socket.id);
+    const userId = socket.user.id;
+    logger.info(`Kullanıcı bağlandı: ${userId}`);
+    this.users.set(userId, socket.id);
 
-    // Kullanıcı bağlantısı kesildiğinde
+    // Bağlantı olaylarını dinle
+    this._registerDisconnectHandler(socket, userId);
+    this._registerNotificationHandlers(socket);
+  }
+  
+  _registerDisconnectHandler(socket, userId) {
     socket.on("disconnect", () => {
-      logger.info(`User disconnected: ${socket.user.id}`);
-      this.users.delete(socket.user.id);
+      logger.info(`Kullanıcı bağlantısı kesildi: ${userId}`);
+      this.users.delete(userId);
     });
-
-    // Yeni post bildirimi
+  }
+  
+  _registerNotificationHandlers(socket) {
+    // Yeni gönderi bildirimi
     socket.on("new_post", (data) => {
       this.io.emit("post_notification", {
         type: "new_post",
@@ -57,30 +68,31 @@ class Socket {
 
     // Yeni yorum bildirimi
     socket.on("new_comment", (data) => {
-      const authorSocketId = this.users.get(data.authorId);
-      if (authorSocketId) {
-        this.io.to(authorSocketId).emit("comment_notification", {
-          type: "new_comment",
-          userId: socket.user.id,
-          postId: data.postId,
-        });
-      }
+      this._sendToSpecificUser(data.authorId, "comment_notification", {
+        type: "new_comment",
+        userId: socket.user.id,
+        postId: data.postId,
+      });
     });
 
     // Beğeni bildirimi
     socket.on("new_like", (data) => {
-      const authorSocketId = this.users.get(data.authorId);
-      if (authorSocketId) {
-        this.io.to(authorSocketId).emit("like_notification", {
-          type: "new_like",
-          userId: socket.user.id,
-          postId: data.postId,
-        });
-      }
+      this._sendToSpecificUser(data.authorId, "like_notification", {
+        type: "new_like",
+        userId: socket.user.id,
+        postId: data.postId,
+      });
     });
   }
+  
+  _sendToSpecificUser(userId, event, data) {
+    const socketId = this.users.get(userId);
+    if (socketId) {
+      this.io.to(socketId).emit(event, data);
+    }
+  }
 
-  // Bildirim gönderme metodu
+  // Genel bildirim gönderme metodu
   sendNotification(userId, notification) {
     const socketId = this.users.get(userId);
     if (socketId) {

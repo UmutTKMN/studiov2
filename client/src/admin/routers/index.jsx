@@ -12,12 +12,15 @@ import AdminProjects from "../pages/project";
 import NewProject from "../pages/project/New";
 // Users
 import AdminUsers from "../pages/user";
+// Ticket
+import AdminTickets from "../pages/ticket";
+import DetailTicket from "../pages/ticket/Detail";
 // Activity Logs
 import AdminActivityLogs from "../pages/logs";
 
 export const adminRoutes = {
   path: "admin",
-  element:(
+  element: (
     <ProtectedRoute>
       <AdminLayout />
     </ProtectedRoute>
@@ -50,9 +53,16 @@ export const adminRoutes = {
       children: [{ index: true, element: <AdminActivityLogs /> }],
     },
     {
-      path: "users", 
+      path: "users",
       children: [{ index: true, element: <AdminUsers /> }],
-    }
+    },
+    {
+      path: "tickets",
+      children: [
+        { index: true, element: <AdminTickets /> },
+        { path: ":id", element: <DetailTicket /> },
+      ],
+    },
   ],
 };
 

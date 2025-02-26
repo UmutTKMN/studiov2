@@ -7,7 +7,7 @@ const options = {
     info: {
       title: "Kahra Studio API",
       version: "1.0.0",
-      description: "Kahra Studio REST API documentation",
+      description: "Kahra Studio REST API belgeleri",
       contact: {
         name: "Kahra Studio",
         url: "https://kahrastudio.art",
@@ -16,8 +16,12 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:3000",
-        description: "Development server",
+        url: "http://localhost:5001",
+        description: "Geliştirme sunucusu",
+      },
+      {
+        url: "https://api.kahrastudio.art",
+        description: "Üretim sunucusu",
       },
     ],
     components: {
@@ -30,7 +34,7 @@ const options = {
       },
     },
   },
-  apis: ["./src/routes/*.js"], // Route dosyalarındaki JSDoc yorumlarını tara
+  apis: ["./src/routes/*.js"],
 };
 
 const specs = swaggerJsdoc(options);

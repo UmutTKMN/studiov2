@@ -1,4 +1,5 @@
 const config = require('@config');
+const logger = require('../utils/logger');
 
 class ErrorHandler extends Error {
     constructor(message, statusCode) {
@@ -15,13 +16,28 @@ const errorMiddleware = (err, req, res, next) => {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || 'error';
 
-    res.status(err.statusCode).json({
+    // Hatayı logla
+    if (err.statusCode >= 500) {
+        logger.error(`${err.statusCode} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
+        logger.error(err.stack);
+    } else {
+        logger.warn(`${err.statusCode} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
+    }
+
+    // Geliştirme ortamında tam hata bilgilerini gönder
+    const errorResponse = {
         success: false,
         status: err.status,
-        message: err.message,
-        error: process.env.NODE_ENV === 'development' ? err : {},
-        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-    });
+        message: err.message || 'Bir hata oluştu',
+    };
+
+    // Geliştirme ortamında ek hata detayları ekle
+    if (config.app.env === 'development') {
+        errorResponse.error = err;
+        errorResponse.stack = err.stack;
+    }
+
+    res.status(err.statusCode).json(errorResponse);
 };
 
 module.exports = {
