@@ -1,62 +1,103 @@
-# StudioV2
+# Kahra Studio Dokümantasyonu
 
-Bu proje, React ve Tailwind CSS kullanarak oluşturulmuş bir web uygulamasıdır. Proje, hem sunucu (server) hem de istemci (client) taraflarını içerir.
+Bu dokümantasyon, Kahra Studio projesinin teknik detaylarını ve kullanım talimatlarını içermektedir.
 
-## Başlarken
+## İçindekiler
+
+1. [Genel Bakış](#genel-bakış)
+2. [Başlangıç](#başlangıç)
+3. [Proje Yapısı](#proje-yapısı)
+4. [Teknik Dokümantasyon](#teknik-dokümantasyon)
+5. [Katkıda Bulunma](#katkıda-bulunma)
+6. [Lisans](#lisans)
+
+## Genel Bakış
+
+Kahra Studio, içerik yönetimi ve stüdyo işlemleri için geliştirilmiş modern bir web uygulamasıdır. Bu proje, React tabanlı bir frontend ve Node.js tabanlı bir backend API'den oluşmaktadır.
+
+### Temel Özellikler
+
+- Kullanıcı kimlik doğrulama ve yetkilendirme
+- İçerik oluşturma ve düzenleme
+- Zengin metin editörü
+- Gerçek zamanlı bildirimler
+- Kullanıcı yönetimi
+- Responsive tasarım
+
+## Başlangıç
+
+Projeyi yerel geliştirme ortamınızda çalıştırmak için aşağıdaki adımları izleyin:
 
 ### Gereksinimler
 
-- Node.js
-- npm ve pnpm
+- Node.js (>= 16.0.0)
+- npm veya pnpm
+- MySQL veritabanı
 
 ### Kurulum
 
-1. Depoyu klonlayın:
-    ```sh
-    git clone https://github.com/kullanici/studiov2.git
-    cd studiov2
-    ```
+1. Repo'yu klonlayın:
+   ```bash
+   git clone https://github.com/kullanici/kahrastudio.git
+   cd kahrastudio
+   ```
 
-2. Sunucu bağımlılıklarını yükleyin:
-    ```sh
-    cd server
-    npm install
-    ```
+2. Backend API'yi kurun:
+   ```bash
+   cd api
+   npm install
+   cp .env.example .env  # .env dosyasını yapılandırın
+   npm run dev
+   ```
 
-3. İstemci bağımlılıklarını yükleyin:
-    ```sh
-    cd ../client
-    pnpm install
-    ```
+3. Frontend uygulamasını kurun:
+   ```bash
+   cd ../studio
+   pnpm install
+   cp .env.example .env  # .env dosyasını yapılandırın
+   pnpm run dev
+   ```
 
-### Çalıştırma
+4. Tarayıcınızda aşağıdaki adreslere giderek uygulamaya erişin:
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:5000
+   - API Dokümantasyonu: http://localhost:5000/api-docs
 
-#### Sunucu
+## Proje Yapısı
 
-Sunucuyu başlatmak için:
-```sh
-cd server
-npm run dev
-```
+Projemiz iki ana bölümden oluşmaktadır:
 
-#### İstemci
+1. **API** - Backend Uygulaması
+   - Node.js ve Express.js ile geliştirilmiş
+   - RESTful API tasarımı
+   - MySQL veritabanı entegrasyonu
+   - JWT tabanlı kimlik doğrulama
+   - Socket.io ile gerçek zamanlı özellikler
 
-İstemciyi başlatmak için:
-```sh
-cd client
-pnpm run dev
-```
+2. **Studio** - Frontend Uygulaması
+   - React 19 ile geliştirilmiş
+   - Tailwind CSS ile stillendirilmiş
+   - React Router v7 ile sayfa yönlendirme
+   - Editor.js ile zengin metin düzenleme
+   - Responsive tasarım
 
-### Kullanılan Teknolojiler
+## Teknik Dokümantasyon
 
-- **React**: Kullanıcı arayüzü oluşturmak için.
-- **Tailwind CSS**: Stil ve tasarım için.
-- **Node.js**: Sunucu tarafı çalışmaları için.
+Daha detaylı teknik dokümantasyon aşağıdaki bağlantılarda bulunabilir:
 
-### Katkıda Bulunma
+- [API Dokümantasyonu](docs/API.md)
+- [Frontend Dokümantasyonu](docs/STUDIO.md)
 
-Katkıda bulunmak isterseniz, lütfen bir pull request gönderin veya bir sorun (issue) açın.
+## Katkıda Bulunma
 
-### Lisans
+Projeye katkıda bulunmak istiyorsanız, lütfen aşağıdaki adımları izleyin:
 
-Bu proje [MIT Lisansı](LICENSE) ile lisanslanmıştır. Detaylı bilgi için `LICENSE` dosyasını inceleyebilirsiniz.
+1. Projeyi forklayın
+2. Yaptığınız değişiklikler için bir branch oluşturun (`git checkout -b ozellik/amazing-ozellik`)
+3. Değişikliklerinizi commit edin (`git commit -m 'Amazing özellik ekle'`)
+4. Branch'inizi push edin (`git push origin ozellik/amazing-ozellik`)
+5. Bir Pull Request açın
+
+## Lisans
+
+Bu proje [MIT Lisansı](LICENSE) altında lisanslanmıştır. 
