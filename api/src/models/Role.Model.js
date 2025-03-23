@@ -1,137 +1,138 @@
-const mysql = require("mysql");
-const config = require("../config/config");
-
-const pool = mysql.createPool(config.db);
+const pool = require("../config/pool");
 
 class Role {
   static async create(roleData) {
-    return new Promise((resolve, reject) => {
+    try {
       const query = `
-                INSERT INTO roles SET ?
-            `;
+        INSERT INTO roles
+        (role_name, role_description, role_createdAt)
+        VALUES ($1, $2, $3)
+        RETURNING *`;
 
-      pool.query(
-        query,
-        {
-          role_name: roleData.name,
-          role_description: roleData.description,
-          role_createdAt: new Date(),
-        },
-        (error, results) => {
-          if (error) return reject(error);
-          resolve(results);
-        }
-      );
-    });
+      const values = [roleData.name, roleData.description, new Date()];
+
+      const result = await pool.query(query, values);
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
   }
 
   static async findByIdOrName(identifier) {
-    return new Promise((resolve, reject) => {
+    try {
       const query = `
-                SELECT * FROM roles 
-                WHERE role_id = ? OR role_name = ?
-            `;
+        SELECT * FROM roles 
+        WHERE role_id = $1 OR role_name = $2
+      `;
 
-      pool.query(query, [identifier, identifier], (error, results) => {
-        if (error) return reject(error);
-        resolve(results[0]);
-      });
-    });
+      const result = await pool.query(query, [identifier, identifier]);
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
   }
 
   static async findAll() {
-    return new Promise((resolve, reject) => {
+    try {
       const query = `
-                SELECT r.*, 
-                       COUNT(u.user_id) as user_count
-                FROM roles r
-                LEFT JOIN users u ON r.role_id = u.user_role
-                GROUP BY r.role_id
-                ORDER BY r.role_name ASC
-            `;
+        SELECT r.*, 
+               COUNT(u.user_id) as user_count
+        FROM roles r
+        LEFT JOIN users u ON r.role_id = u.user_role
+        GROUP BY r.role_id
+        ORDER BY r.role_name ASC
+      `;
 
-      pool.query(query, (error, results) => {
-        if (error) return reject(error);
-        resolve(results);
-      });
-    });
+      const result = await pool.query(query);
+      return result.rows;
+    } catch (error) {
+      throw error;
+    }
   }
 
   static async update(identifier, roleData) {
-    return new Promise((resolve, reject) => {
+    try {
       const updateFields = [];
       const queryParams = [];
+      let paramCount = 1;
 
       if (roleData.name) {
-        updateFields.push("role_name = ?");
+        updateFields.push(`role_name = $${paramCount}`);
         queryParams.push(roleData.name);
+        paramCount++;
       }
 
       if (roleData.description !== undefined) {
-        updateFields.push("role_description = ?");
+        updateFields.push(`role_description = $${paramCount}`);
         queryParams.push(roleData.description);
+        paramCount++;
       }
 
       updateFields.push("role_updatedAt = CURRENT_TIMESTAMP");
+
+      // WHERE koşulu için parametreler
       queryParams.push(identifier, identifier);
 
       const query = `
-                UPDATE roles 
-                SET ${updateFields.join(", ")} 
-                WHERE role_id = ? OR role_name = ?
-            `;
+        UPDATE roles 
+        SET ${updateFields.join(", ")} 
+        WHERE role_id = $${paramCount} OR role_name = $${paramCount + 1}
+        RETURNING *
+      `;
 
-      pool.query(query, queryParams, (error, results) => {
-        if (error) return reject(error);
-        resolve(results);
-      });
-    });
+      const result = await pool.query(query, queryParams);
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
   }
 
   static async delete(identifier) {
-    return new Promise((resolve, reject) => {
+    try {
       const query = `
-                DELETE FROM roles 
-                WHERE role_id = ? OR role_name = ?
-            `;
+        DELETE FROM roles 
+        WHERE role_id = $1 OR role_name = $2
+        RETURNING *
+      `;
 
-      pool.query(query, [identifier, identifier], (error, results) => {
-        if (error) return reject(error);
-        resolve(results);
-      });
-    });
+      const result = await pool.query(query, [identifier, identifier]);
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
   }
 
   static async assignToUser(userId, roleId) {
-    return new Promise((resolve, reject) => {
+    try {
       const query = `
-                UPDATE users 
-                SET user_role = ?, 
-                    user_updatedAt = CURRENT_TIMESTAMP 
-                WHERE user_id = ?
-            `;
+        UPDATE users 
+        SET user_role = $1, 
+            user_updatedAt = CURRENT_TIMESTAMP 
+        WHERE user_id = $2
+        RETURNING *
+      `;
 
-      pool.query(query, [roleId, userId], (error, results) => {
-        if (error) return reject(error);
-        resolve(results);
-      });
-    });
+      const result = await pool.query(query, [roleId, userId]);
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
   }
 
   static async getUserRole(userId) {
-    return new Promise((resolve, reject) => {
+    try {
       const query = `
-                SELECT r.* 
-                FROM roles r 
-                JOIN users u ON u.user_role = r.role_id 
-                WHERE u.user_id = ?
-            `;
+        SELECT r.* 
+        FROM roles r 
+        JOIN users u ON u.user_role = r.role_id 
+        WHERE u.user_id = $1
+      `;
 
-      pool.query(query, [userId], (error, results) => {
-        if (error) return reject(error);
-        resolve(results[0]);
-      });
-    });
+      const result = await pool.query(query, [userId]);
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
   }
 }
 

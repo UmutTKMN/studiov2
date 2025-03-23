@@ -10,7 +10,7 @@ class TicketMessageService {
         user_id: userId,
         message: messageData.message,
         is_admin: isAdmin,
-        attachments: messageData.attachments || null
+        attachments: messageData.attachments || null,
       };
 
       const result = await TicketMessage.create(message);
@@ -19,7 +19,7 @@ class TicketMessageService {
         userId,
         "CREATE_TICKET_MESSAGE",
         "ticket_messages",
-        result.insertId,
+        result.message_id,
         `Destek talebine yeni mesaj eklendi: ${ticketId}`
       );
 
@@ -40,7 +40,7 @@ class TicketMessageService {
   static async markMessageAsRead(messageId, userId) {
     try {
       const result = await TicketMessage.markAsRead(messageId, userId);
-      
+
       await ActivityLogService.logActivity(
         userId,
         "READ_TICKET_MESSAGE",

@@ -5,17 +5,16 @@ class CategoryService {
   static async createCategory(categoryData, userId) {
     try {
       const result = await Category.create(categoryData);
-      const newCategory = await Category.findByIdOrSlug(result.insertId);
 
       await ActivityLogService.logActivity(
         userId,
         "CREATE",
         "categories",
-        result.insertId,
+        result.category_id,
         `Yeni kategori oluşturuldu: ${categoryData.category_name}`
       );
 
-      return newCategory;
+      return result;
     } catch (error) {
       throw new Error("Kategori oluşturma hatası: " + error.message);
     }

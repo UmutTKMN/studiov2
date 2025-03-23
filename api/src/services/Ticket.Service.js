@@ -15,7 +15,7 @@ class TicketService {
         user_id: userId,
         title: ticketData.title,
         description: ticketData.description,
-        category_id: ticketData.category_id, // category yerine category_id kullanılıyor
+        category_id: ticketData.category_id,
         priority: ticketData.priority || "medium",
       };
 
@@ -25,13 +25,16 @@ class TicketService {
         userId,
         "CREATE_TICKET",
         "support_tickets",
-        result.insertId,
+        result.ticket_id,
         `Yeni destek talebi oluşturuldu: ${ticketData.title}`
       );
 
-      return await Ticket.findById(result.insertId);
+      return result;
     } catch (error) {
-      throw new ErrorHandler(error.message || "Destek talebi oluşturulamadı", error.statusCode || 400);
+      throw new ErrorHandler(
+        error.message || "Destek talebi oluşturulamadı",
+        error.statusCode || 400
+      );
     }
   }
 
@@ -86,7 +89,7 @@ class TicketService {
         userId,
         "ADD_TICKET_MESSAGE",
         "ticket_messages",
-        result.insertId,
+        result.message_id, // result.insertId yerine result.message_id kullanılıyor
         `Destek talebine yeni mesaj eklendi`
       );
 
@@ -99,7 +102,8 @@ class TicketService {
   static async updateTicketStatus(ticketId, status, userId) {
     try {
       const result = await Ticket.updateStatus(ticketId, status, userId);
-      if (result.affectedRows === 0) {
+      if (!result || result.rowCount === 0) {
+        // result.affectedRows yerine result.rowCount kullanılıyor
         throw new ErrorHandler("Destek talebi güncellenemedi", 400);
       }
 
@@ -123,20 +127,21 @@ class TicketService {
       if (!ticket) {
         throw new ErrorHandler("Destek talebi bulunamadı", 404);
       }
-      
+
       const result = await Ticket.assignStaff(ticketId, adminId);
-      if (result.affectedRows === 0) {
+      if (!result || result.rowCount === 0) {
+        // result.affectedRows yerine result.rowCount kullanılıyor
         throw new ErrorHandler("Destek görevlisi atanamadı", 400);
       }
-      
+
       await ActivityLogService.logActivity(
         adminId,
         "ASSIGN_TICKET",
-        "support_tickets", 
+        "support_tickets",
         ticketId,
         `Destek talebine görevli atandı`
       );
-      
+
       return await Ticket.findById(ticketId);
     } catch (error) {
       throw new ErrorHandler(error.message, error.statusCode || 400);
@@ -150,7 +155,7 @@ class TicketService {
       throw new ErrorHandler("Kategoriler getirilemedi", 400);
     }
   }
-  
+
   static async getCategoryById(categoryId) {
     try {
       const category = await Ticket.getCategoryById(categoryId);
@@ -159,7 +164,10 @@ class TicketService {
       }
       return category;
     } catch (error) {
-      throw new ErrorHandler(error.message || "Kategori getirilemedi", error.statusCode || 400);
+      throw new ErrorHandler(
+        error.message || "Kategori getirilemedi",
+        error.statusCode || 400
+      );
     }
   }
 }

@@ -11,11 +11,11 @@ class TicketCategoryService {
         userId,
         "CREATE_TICKET_CATEGORY",
         "ticket_categories",
-        result.insertId,
+        result.category_id,
         `Yeni destek kategorisi oluşturuldu: ${categoryData.name}`
       );
 
-      return await TicketCategory.findById(result.insertId);
+      return result;
     } catch (error) {
       throw new ErrorHandler("Kategori oluşturulamadı", 400);
     }

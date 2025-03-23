@@ -12,11 +12,11 @@ class PostService {
         postData.post_author,
         "CREATE",
         "posts",
-        result.insertId,
+        result.post_id,
         `Yeni yazı oluşturuldu: ${postData.post_title}`
       );
 
-      return await Post.findByIdOrSlug(result.insertId);
+      return result;
     } catch (error) {
       throw new Error(`Blog yazısı oluşturma hatası: ${error.message}`);
     }

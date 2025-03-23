@@ -16,11 +16,11 @@ class RoleService {
         userId,
         "CREATE",
         "roles",
-        result.insertId,
+        result.role_id,
         `Yeni rol oluşturuldu: ${roleData.name}`
       );
 
-      return await Role.findByIdOrName(result.insertId);
+      return result;
     } catch (error) {
       throw new Error("Rol oluşturma hatası: " + error.message);
     }
@@ -138,10 +138,10 @@ class RoleService {
       const roles = await Role.findAll();
       const stats = await Promise.all(
         roles.map(async (role) => {
-          const userCount = await Role.getUserCount(role.id);
+          const userCount = await Role.getUserCount(role.role_id);
           return {
-            id: role.id,
-            name: role.name,
+            id: role.role_id,
+            name: role.role_name,
             userCount,
           };
         })

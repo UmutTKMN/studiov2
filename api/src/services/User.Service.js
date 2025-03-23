@@ -1,16 +1,9 @@
 const User = require("../models/User.Model");
-const ActivityLogService = require("./ActivityLog.Service"); // ActivityLogService'i ekle
+const ActivityLogService = require("./ActivityLog.Service");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const config = require("../config/config");
-const mysql = require("mysql");
-
-const pool = mysql.createPool({
-  ...config.db,
-  connectionLimit: 10,
-  waitForConnections: true,
-  queueLimit: 0,
-});
+const pool = require("../config/pool"); // MySQL yerine PostgreSQL pool'u kullanılıyor
 
 class UserService {
   static async createUser(userData) {
@@ -18,19 +11,22 @@ class UserService {
       // Şifreyi hashle
       const hashedPassword = await bcrypt.hash(userData.user_password, 10);
       userData.user_password = hashedPassword;
+
       // Kullanıcıyı oluştur
       const result = await User.create(userData);
+
       // Kayıt aktivitesini logla
       await ActivityLogService.logActivity(
-        result.insertId,
+        result.user_id,
         "REGISTER",
         "users",
-        result.insertId,
+        result.user_id,
         `Yeni kullanıcı kaydı: ${userData.user_name} (${userData.user_email})`
       );
+
       const { user_password, ...userWithoutPassword } = userData;
       return {
-        user_id: result.insertId,
+        user_id: result.user_id,
         ...userWithoutPassword,
       };
     } catch (error) {
@@ -45,10 +41,10 @@ class UserService {
       if (!user) {
         throw new Error("Kullanıcı bulunamadı");
       }
-      // Kullanıcı aktif değilse
-      if (!user.user_isActive) {
-        throw new Error("Hesabınız devre dışı bırakılmış");
-      }
+      // // Kullanıcı aktif değilse
+      // if (Boolean(user.user_isActive) === false) {
+      //   throw new Error("Hesabınız devre dışı bırakılmış");
+      // }
       // Başarısız giriş denemelerini kontrol et
       if (user.user_failed_login_attempts >= 5) {
         const lastFailedLogin = new Date(user.user_last_failed_login);
@@ -139,34 +135,48 @@ class UserService {
           r.role_id
         FROM users u
         LEFT JOIN roles r ON u.user_role = r.role_id
-        WHERE u.user_isActive = 1
+        WHERE u.user_isActive = true
       `;
+
       const queryParams = [];
+      let paramIndex = 1;
+
       // Arama filtresi
       if (params.search) {
-        query += ` AND (u.user_name LIKE ? OR u.user_email LIKE ? OR u.user_bio LIKE ?)`;
+        query += ` AND (u.user_name LIKE $${paramIndex} OR u.user_email LIKE $${
+          paramIndex + 1
+        } OR u.user_bio LIKE $${paramIndex + 2})`;
         const searchTerm = `%${params.search}%`;
         queryParams.push(searchTerm, searchTerm, searchTerm);
+        paramIndex += 3;
       }
+
       // Rol filtresi
       if (params.role) {
-        query += ` AND u.user_role = ?`;
+        query += ` AND u.user_role = $${paramIndex}`;
         queryParams.push(params.role);
+        paramIndex++;
       }
+
       // Konum filtreleri
       if (params.country) {
-        query += ` AND u.user_country = ?`;
+        query += ` AND u.user_country = $${paramIndex}`;
         queryParams.push(params.country);
+        paramIndex++;
       }
+
       if (params.city) {
-        query += ` AND u.user_city = ?`;
+        query += ` AND u.user_city = $${paramIndex}`;
         queryParams.push(params.city);
+        paramIndex++;
       }
+
       // Toplam kayıt sayısını al
       const countQuery = query.replace(
         /SELECT .*? FROM/,
         "SELECT COUNT(*) as total FROM"
       );
+
       // Sıralama
       const validColumns = [
         "user_name",
@@ -174,47 +184,47 @@ class UserService {
         "user_createdAt",
         "user_last_login",
       ];
+
       const sortBy = validColumns.includes(params.sortBy)
         ? params.sortBy
         : "user_createdAt";
+
       const sortOrder = params.sortOrder === "ASC" ? "ASC" : "DESC";
       query += ` ORDER BY ${sortBy} ${sortOrder}`;
+
       // Sayfalama
       const page = parseInt(params.page) || 1;
       const limit = parseInt(params.limit) || 20;
       const offset = (page - 1) * limit;
-      query += ` LIMIT ? OFFSET ?`;
+
+      query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
       queryParams.push(limit, offset);
-      return new Promise((resolve, reject) => {
-        pool.query(
-          countQuery,
-          queryParams.slice(0, -2),
-          (error, countResults) => {
-            if (error) {
-              return reject(error);
-            }
-            const total = countResults[0].total;
-            pool.query(query, queryParams, (error, results) => {
-              if (error) {
-                return reject(error);
-              }
-              const users = results.map((user) => {
-                const { user_password, reset_token, ...safeUser } = user;
-                return safeUser;
-              });
-              resolve({
-                users,
-                pagination: {
-                  total,
-                  page,
-                  limit,
-                  totalPages: Math.ceil(total / limit),
-                },
-              });
-            });
-          }
-        );
+
+      // Önce toplam sayıyı al
+      const countResult = await pool.query(
+        countQuery,
+        queryParams.slice(0, -2)
+      );
+      const total = parseInt(countResult.rows[0].total);
+
+      // Sorguyu çalıştır
+      const result = await pool.query(query, queryParams);
+
+      // Kullanıcıları formatla ve hassas bilgileri kaldır
+      const users = result.rows.map((user) => {
+        const { user_password, reset_token, ...safeUser } = user;
+        return safeUser;
       });
+
+      return {
+        users,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
     } catch (error) {
       throw new Error("Kullanıcılar getirilemedi: " + error.message);
     }
@@ -223,26 +233,24 @@ class UserService {
   static async getUser(userId) {
     try {
       const query = `
-          SELECT
-            u.*,
-            r.role_name
-          FROM users u
-          LEFT JOIN roles r ON u.user_role = r.role_id
-          WHERE u.user_id = ?
-        `;
-      return new Promise((resolve, reject) => {
-        pool.query(query, [userId], (error, results) => {
-          if (error) {
-            return reject(error);
-          }
-          if (results.length === 0) {
-            return reject(new Error("Kullanıcı bulunamadı"));
-          }
-          const user = results[0];
-          const { user_password, reset_token, ...safeUser } = user;
-          resolve(safeUser);
-        });
-      });
+        SELECT
+          u.*,
+          r.role_name
+        FROM users u
+        LEFT JOIN roles r ON u.user_role = r.role_id
+        WHERE u.user_id = $1
+      `;
+
+      const result = await pool.query(query, [userId]);
+
+      if (result.rows.length === 0) {
+        throw new Error("Kullanıcı bulunamadı");
+      }
+
+      const user = result.rows[0];
+      const { user_password, reset_token, ...safeUser } = user;
+
+      return safeUser;
     } catch (error) {
       throw new Error("Kullanıcı getirilemedi: " + error.message);
     }
@@ -259,9 +267,10 @@ class UserService {
       }
 
       const result = await User.update(userId, updateData);
-      if (result.affectedRows === 0) {
+      if (result.rowCount === 0) {
         throw new Error("Kullanıcı bulunamadı");
       }
+
       await ActivityLogService.logActivity(
         userId,
         "UPDATE",
@@ -269,6 +278,7 @@ class UserService {
         userId,
         `Profil güncellendi: ${updateData.user_name || "name-unchanged"}`
       );
+
       const updatedUser = await User.findById(userId);
       const { user_password, ...userWithoutPassword } = updatedUser;
       return userWithoutPassword;
@@ -334,31 +344,28 @@ class UserService {
 
   static async getAdminUsers() {
     try {
-      return new Promise((resolve, reject) => {
-        const query = `
-          SELECT u.user_id, u.user_name, u.user_email, u.user_profileImage, 
-                 u.user_createdAt, u.user_last_login, r.role_name
-          FROM users u
-          JOIN roles r ON u.user_role = r.role_id
-          WHERE r.role_name = 'admin' AND u.user_isActive = 1
-          ORDER BY u.user_name ASC
-        `;
-        pool.query(query, [], (error, results) => {
-          if (error) {
-            return reject(error);
-          }
-          const adminUsers = results.map((user) => ({
-            id: user.user_id,
-            name: user.user_name,
-            email: user.user_email,
-            profileImage: user.user_profileImage,
-            role: user.role_name,
-            createdAt: user.user_createdAt,
-            lastLogin: user.user_last_login,
-          }));
-          resolve(adminUsers);
-        });
-      });
+      const query = `
+        SELECT u.user_id, u.user_name, u.user_email, u.user_profileImage, 
+               u.user_createdAt, u.user_last_login, r.role_name
+        FROM users u
+        JOIN roles r ON u.user_role = r.role_id
+        WHERE r.role_name = 'admin' AND u.user_isActive = true
+        ORDER BY u.user_name ASC
+      `;
+
+      const result = await pool.query(query);
+
+      const adminUsers = result.rows.map((user) => ({
+        id: user.user_id,
+        name: user.user_name,
+        email: user.user_email,
+        profileImage: user.user_profileImage,
+        role: user.role_name,
+        createdAt: user.user_createdAt,
+        lastLogin: user.user_last_login,
+      }));
+
+      return adminUsers;
     } catch (error) {
       throw new Error("Admin kullanıcıları getirilemedi: " + error.message);
     }

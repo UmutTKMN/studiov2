@@ -1,60 +1,61 @@
-const mysql = require("mysql");
-const config = require("../config/config");
-const slugify = require('slugify');
-
-const pool = mysql.createPool(config.db);
+const pool = require("../config/pool");
+const slugify = require("slugify");
 
 class Project {
   static async create(projectData) {
-    return new Promise((resolve, reject) => {
-      const slug = slugify(projectData.project_title, { 
-        lower: true, 
+    try {
+      const slug = slugify(projectData.project_title, {
+        lower: true,
         strict: true,
-        locale: 'tr'
+        locale: "tr",
       });
-      
+
       const query = `
-        INSERT INTO projects SET ?
-      `;
+        INSERT INTO projects
+        (project_title, project_slug, project_description, project_owner, 
+        project_tags, project_status, project_start_date, project_end_date,
+        project_budget, project_createdAt)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING *`;
 
-      const insertData = {
-        project_title: projectData.project_title,
-        project_slug: slug,
-        project_description: projectData.project_description,
-        project_owner: projectData.project_owner,
-        project_tags: projectData.project_tags || null,
-        project_status: projectData.project_status || 'pending',
-        project_start_date: projectData.project_start_date || null,
-        project_end_date: projectData.project_end_date || null,
-        project_budget: projectData.project_budget || null,
-        project_createdAt: new Date()
-      };
+      const values = [
+        projectData.project_title,
+        slug,
+        projectData.project_description,
+        projectData.project_owner,
+        projectData.project_tags || null,
+        projectData.project_status || "pending",
+        projectData.project_start_date || null,
+        projectData.project_end_date || null,
+        projectData.project_budget || null,
+        new Date(),
+      ];
 
-      pool.query(query, insertData, (error, results) => {
-        if (error) return reject(error);
-        resolve(results);
-      });
-    });
+      const result = await pool.query(query, values);
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
   }
 
   static async findByIdOrSlug(identifier) {
-    return new Promise((resolve, reject) => {
+    try {
       const query = `
         SELECT p.*, u.user_name as owner_name
         FROM projects p 
         LEFT JOIN users u ON p.project_owner = u.user_id 
-        WHERE p.project_id = ? OR p.project_slug = ?
+        WHERE p.project_id = $1 OR p.project_slug = $2
       `;
 
-      pool.query(query, [identifier, identifier], (error, results) => {
-        if (error) return reject(error);
-        resolve(results[0]);
-      });
-    });
+      const result = await pool.query(query, [identifier, identifier]);
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
   }
 
   static async findAll(filters = {}) {
-    return new Promise((resolve, reject) => {
+    try {
       let query = `
         SELECT p.*, u.user_name as owner_name
         FROM projects p 
@@ -63,92 +64,113 @@ class Project {
       `;
 
       const queryParams = [];
+      let paramCount = 1;
 
       if (filters.status) {
-        query += " AND p.project_status = ?";
+        query += ` AND p.project_status = $${paramCount}`;
         queryParams.push(filters.status);
+        paramCount++;
       }
 
       if (filters.owner) {
-        query += " AND p.project_owner = ?";
+        query += ` AND p.project_owner = $${paramCount}`;
         queryParams.push(filters.owner);
+        paramCount++;
       }
 
       query += " ORDER BY p.project_createdAt DESC";
 
       if (filters.limit) {
-        query += " LIMIT ?";
+        query += ` LIMIT $${paramCount}`;
         queryParams.push(parseInt(filters.limit));
       }
 
-      pool.query(query, queryParams, (error, results) => {
-        if (error) return reject(error);
-        resolve(results);
-      });
-    });
+      const result = await pool.query(query, queryParams);
+      return result.rows;
+    } catch (error) {
+      throw error;
+    }
   }
 
   static async update(identifier, projectData) {
-    return new Promise((resolve, reject) => {
+    try {
       let updateFields = [];
       let queryParams = [];
+      let paramCount = 1;
 
       if (projectData.project_title) {
-        updateFields.push('project_title = ?', 'project_slug = ?');
+        updateFields.push(
+          `project_title = $${paramCount}`,
+          `project_slug = $${paramCount + 1}`
+        );
         queryParams.push(
           projectData.project_title,
-          slugify(projectData.project_title, { lower: true, strict: true, locale: 'tr' })
+          slugify(projectData.project_title, {
+            lower: true,
+            strict: true,
+            locale: "tr",
+          })
         );
+        paramCount += 2;
       }
 
-      ['project_description', 'project_status', 'project_tags', 
-       'project_start_date', 'project_end_date', 'project_budget']
-        .forEach(field => {
-          if (projectData[field] !== undefined) {
-            updateFields.push(`${field} = ?`);
-            queryParams.push(projectData[field]);
-          }
-        });
+      [
+        "project_description",
+        "project_status",
+        "project_tags",
+        "project_start_date",
+        "project_end_date",
+        "project_budget",
+      ].forEach((field) => {
+        if (projectData[field] !== undefined) {
+          updateFields.push(`${field} = $${paramCount}`);
+          queryParams.push(projectData[field]);
+          paramCount++;
+        }
+      });
 
-      updateFields.push('project_updatedAt = CURRENT_TIMESTAMP');
+      updateFields.push("project_updatedAt = CURRENT_TIMESTAMP");
+
       queryParams.push(identifier, identifier);
 
       const query = `
         UPDATE projects 
-        SET ${updateFields.join(', ')} 
-        WHERE project_id = ? OR project_slug = ?
+        SET ${updateFields.join(", ")} 
+        WHERE project_id = $${paramCount} OR project_slug = $${paramCount + 1}
+        RETURNING *
       `;
-      
-      pool.query(query, queryParams, (error, results) => {
-        if (error) return reject(error);
-        resolve(results);
-      });
-    });
+
+      const result = await pool.query(query, queryParams);
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
   }
 
   static async delete(identifier) {
-    return new Promise((resolve, reject) => {
-      const query = "DELETE FROM projects WHERE project_id = ? OR project_slug = ?";
-      pool.query(query, [identifier, identifier], (error, results) => {
-        if (error) return reject(error);
-        resolve(results);
-      });
-    });
+    try {
+      const query =
+        "DELETE FROM projects WHERE project_id = $1 OR project_slug = $2 RETURNING *";
+      const result = await pool.query(query, [identifier, identifier]);
+      return result.rows[0];
+    } catch (error) {
+      throw error;
+    }
   }
 
   static async findByUserId(userId) {
-    return new Promise((resolve, reject) => {
+    try {
       const query = `
         SELECT p.* 
         FROM projects p 
-        WHERE p.user_id = ?
+        WHERE p.user_id = $1
         ORDER BY p.created_at DESC
       `;
-      pool.query(query, [userId], (error, results) => {
-        if (error) reject(error);
-        resolve(results);
-      });
-    });
+      const result = await pool.query(query, [userId]);
+      return result.rows;
+    } catch (error) {
+      throw error;
+    }
   }
 }
 
