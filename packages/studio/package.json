@@ -1,0 +1,38 @@
+{
+  "name": "studio",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.0.15",
+    "@tanstack/react-query": "^5.69.0",
+    "@trpc/client": "^11.0.0",
+    "@trpc/react-query": "^11.0.0",
+    "npm-check": "^6.0.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hot-toast": "^2.5.2",
+    "react-router-dom": "^7.4.0",
+    "superjson": "^2.2.2",
+    "tailwindcss": "^4.0.15"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.23.0",
+    "@types/node": "^22.13.11",
+    "@types/react": "^19.0.12",
+    "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.23.0",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.18",
+    "globals": "^16.0.0",
+    "vite": "^6.2.2"
+  }
+}
