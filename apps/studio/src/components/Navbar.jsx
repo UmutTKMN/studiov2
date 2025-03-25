@@ -3,16 +3,6 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export default function Navbar() {
   const location = useLocation();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate("/login");
-    } catch (error) {
-      console.error("Çıkış yapılırken hata:", error);
-    }
-  };
 
   const menuItems = [
     {

@@ -1,5 +1,6 @@
 const { router, publicProcedure } = require("../api/core");
 const { postRouter } = require("./postRouter");
+const { categoryRouter } = require("./categoryRouter");
 
 const appRouter = router({
   health: router({
@@ -11,6 +12,7 @@ const appRouter = router({
     }),
   }),
   post: postRouter,
+  category: categoryRouter,
 });
 
 module.exports = { appRouter };

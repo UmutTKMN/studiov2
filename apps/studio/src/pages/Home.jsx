@@ -1,6 +1,7 @@
 import { trpc } from "../utils/trpc";
 import { useEffect } from "react";
 import ErrorBoundary from "../components/ErrorBoundary";
+import Category from "./Category";
 
 export default function Home() {
   // Ana bileşeni Error Boundary ile sarıyoruz
@@ -111,6 +112,7 @@ function HomeContent() {
         <h2 className="text-xl font-semibold mb-2">Son Gönderiler</h2>
         {renderPosts()}
       </div>
+      <Category />
     </div>
   );
 }

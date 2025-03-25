@@ -32,8 +32,7 @@ class App {
     this.app.use(compression());
     this.app.use(
       cors({
-        origin: "*",
-        //origin: config.cors.origin,
+        origin: config.cors.origin,
         methods: config.cors.methods,
         allowedHeaders: config.cors.allowedHeaders,
         credentials: true,
@@ -44,11 +43,10 @@ class App {
     this.app.use(bodyParser.json({ limit: "10kb" }));
     this.app.use(bodyParser.urlencoded({ extended: true, limit: "10kb" }));
 
-    // Geliştirme ortamında basit günlük kaydı
+    // Geliştirme ortamında basit günlük
     if (config.app.env === "development") {
       this.app.use(morgan("dev"));
     } else {
-      // Üretim ortamında ayrıntılı günlük kaydı
       this.app.use(morgan("combined", { stream: logger.stream }));
     }
     // API Belgeleri
@@ -61,7 +59,7 @@ class App {
       createExpressMiddleware({
         router: appRouter,
         createContext: createTRPCContext,
-        onError: ({ error, type, path, input, ctx, req }) => {
+        onError: ({ error, type, path }) => {
           console.error(`tRPC error (${type}): ${path}`, error);
         },
       })
@@ -69,7 +67,6 @@ class App {
   }
 
   errorHandling() {
-    // Hata işleme middleware
     this.app.use(errorMiddleware);
   }
 

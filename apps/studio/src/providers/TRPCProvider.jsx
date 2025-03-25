@@ -3,12 +3,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
 import superjson from "superjson";
 import { trpc } from "../utils/trpc";
-import ServerError from "../components/ServerError";
 
 export default function TRPCProvider({ children }) {
-  const [isServerError, setIsServerError] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-
   const createQueryClient = useCallback(
     () =>
       new QueryClient({
@@ -53,20 +49,6 @@ export default function TRPCProvider({ children }) {
   }, []);
 
   const [trpcClient] = useState(() => createTRPCClient());
-
-  // Yeniden bağlanma işlevi
-  const handleRetry = () => {
-    setIsServerError(false);
-    setErrorMessage("");
-
-    // Tüm sorguları geçersiz kıl ve yeniden dene
-    queryClient.invalidateQueries();
-  };
-
-  // Sunucu hatası varsa ServerError bileşenini göster
-  if (isServerError) {
-    return <ServerError onRetry={handleRetry} errorDetails={errorMessage} />;
-  }
 
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
