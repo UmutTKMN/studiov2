@@ -8,7 +8,6 @@ Bu dokümantasyon, Kahra Studio projesinin teknik detaylarını ve kullanım tal
 2. [Başlangıç](#başlangıç)
 3. [Proje Yapısı](#proje-yapısı)
 4. [Teknik Dokümantasyon](#teknik-dokümantasyon)
-5. [Katkıda Bulunma](#katkıda-bulunma)
 6. [Lisans](#lisans)
 
 ## Genel Bakış
