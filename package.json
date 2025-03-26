@@ -1,23 +1,30 @@
 {
   "name": "studiov2",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
+    "dev:all": "pnpm -r run dev",
+    "build:all": "pnpm -r run build",
     "dev:studio": "pnpm --filter studio dev",
     "dev:server": "pnpm --filter server dev",
     "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
-    "start": "pnpm --filter server start"
+    "start": "pnpm --filter server start",
+    "test": "pnpm -r run test"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
     ],
     "ignoredBuiltDependencies": [
-      "@scarf/scarf"
+      "@scarf/scarf",
+      "core-js"
     ]
   },
   "dependencies": {
-    "debug": "^4.4.0",
     "npm-check": "^6.0.1"
   }
 }

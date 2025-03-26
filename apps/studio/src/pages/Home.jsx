@@ -1,10 +1,8 @@
 import { trpc } from "../utils/trpc";
 import { useEffect } from "react";
 import ErrorBoundary from "../components/ErrorBoundary";
-import Category from "./Category";
 
 export default function Home() {
-  // Ana bileşeni Error Boundary ile sarıyoruz
   return (
     <ErrorBoundary>
       <HomeContent />
@@ -43,27 +41,8 @@ function HomeContent() {
       );
     }
 
-    if (postQuery.error) {
-      return (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
-          <p className="text-red-700">
-            Veri alınamadı: {postQuery.error.message}
-          </p>
-          <button
-            className="mt-2 bg-blue-500 text-white px-4 py-1 rounded text-sm"
-            onClick={() => postQuery.refetch()}
-          >
-            Tekrar Dene
-          </button>
-        </div>
-      );
-    }
-
-    // Veri ve yapısını kontrol et
     const postData = postQuery.data;
     if (!postData) return <p>Gönderi bulunamadı</p>;
-
-    // SuperJSON tarafından dönüştürülen veri yapısı
     if (
       postData.json &&
       postData.json.posts &&
@@ -83,7 +62,6 @@ function HomeContent() {
       );
     }
 
-    // Eğer verinin kendisi bir diziyse
     if (Array.isArray(postData)) {
       return (
         <div className="grid gap-4">
@@ -106,13 +84,10 @@ function HomeContent() {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Ana Sayfa</h1>
-
-      {/* Post listesi */}
       <div>
         <h2 className="text-xl font-semibold mb-2">Son Gönderiler</h2>
         {renderPosts()}
       </div>
-      <Category />
     </div>
   );
 }
